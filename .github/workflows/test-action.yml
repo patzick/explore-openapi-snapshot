@@ -12,26 +12,26 @@ permissions:
 jobs:
   test-action:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: "24"
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm i
 
       - name: Build action
-        run: npm run build
+        run: pnpm run build
 
       - name: Run OpenAPI Snapshot Action
-        uses: ./
+        uses: .
         with:
-          schema-file: './example-schema.json'
-          api-url: 'https://explore-openapi.dev/api/snapshot'
+          schema-file: "./example-schema.json"
+          project: "test-project"
           auth-token: ${{ secrets.API_AUTH_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

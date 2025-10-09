@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendSchemaToApi } from '../api.js';
 
 // Mock fetch globally
-global.fetch = vi.fn();
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
 
 describe('sendSchemaToApi', () => {
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -16,33 +18,39 @@ describe('sendSchemaToApi', () => {
       message: 'Snapshot created',
     };
 
-    (global.fetch as any).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     });
 
     const result = await sendSchemaToApi(
-      'https://api.example.com/snapshot',
+      'https://editor-api.explore-openapi.dev/api/snapshot',
       { openapi: '3.0.0' },
-      'test-token'
+      'test-token',
+      'test-project',
+      'test-snapshot'
     );
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://api.example.com/snapshot',
+      'https://editor-api.explore-openapi.dev/api/snapshot',
       expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer test-token',
         },
-        body: JSON.stringify({ openapi: '3.0.0' }),
+        body: JSON.stringify({
+          schema: { openapi: '3.0.0' },
+          project: 'test-project',
+          name: 'test-snapshot'
+        }),
       })
     );
   });
 
   it('should handle API errors', async () => {
-    (global.fetch as any).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 401,
       text: async () => 'Unauthorized',
@@ -50,21 +58,25 @@ describe('sendSchemaToApi', () => {
 
     await expect(
       sendSchemaToApi(
-        'https://api.example.com/snapshot',
+        'https://editor-api.explore-openapi.dev/api/snapshot',
         { openapi: '3.0.0' },
-        'invalid-token'
+        'invalid-token',
+        'test-project',
+        'test-snapshot'
       )
     ).rejects.toThrow('API request failed with status 401');
   });
 
   it('should handle network errors', async () => {
-    (global.fetch as any).mockRejectedValueOnce(new Error('Network error'));
+    fetchMock.mockRejectedValueOnce(new Error('Network error'));
 
     await expect(
       sendSchemaToApi(
-        'https://api.example.com/snapshot',
+        'https://editor-api.explore-openapi.dev/api/snapshot',
         { openapi: '3.0.0' },
-        'test-token'
+        'test-token',
+        'test-project',
+        'test-snapshot'
       )
     ).rejects.toThrow('Network error');
   });

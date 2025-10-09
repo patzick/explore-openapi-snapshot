@@ -8,27 +8,51 @@ async function run(): Promise<void> {
   try {
     // Get inputs
     const schemaFile = core.getInput('schema-file', { required: true });
-    const apiUrl = core.getInput('api-url', { required: true });
+    const project = core.getInput('project', { required: true });
+    const snapshotNameInput = core.getInput('snapshot-name');
     const authToken = core.getInput('auth-token', { required: true });
     const githubToken = core.getInput('github-token', { required: true });
 
+
+    const apiUrl = 'https://editor-api.explore-openapi.dev/api/snapshot';
+
+    // Generate snapshot name: PR number if in PR context, otherwise branch name
+    let snapshotName = snapshotNameInput;
+    if (!snapshotName) {
+      if (github.context.payload.pull_request) {
+        snapshotName = `${github.context.payload.pull_request.number}`;
+      } else {
+        // Extract branch name from ref (refs/heads/branch-name -> branch-name)
+        const ref = github.context.ref;
+        snapshotName = ref.replace('refs/heads/', '');
+      }
+    }
+
+    core.info(`Project: ${project}`);
+    core.info(`Snapshot name: ${snapshotName}`);
+
     core.info(`Reading schema from: ${schemaFile}`);
-    
+
     // Read the JSON schema file
     const schemaContent = await readFile(schemaFile, 'utf-8');
     const schema = JSON.parse(schemaContent);
 
     core.info(`Sending schema to API: ${apiUrl}`);
-    
+
     // Send schema to API
-    const response = await sendSchemaToApi(apiUrl, schema, authToken);
-    
+    const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName);
+
     core.info(`API response received: ${JSON.stringify(response)}`);
 
     // Set outputs
     core.setOutput('response', JSON.stringify(response));
     if (response.snapshotUrl) {
       core.setOutput('snapshot-url', response.snapshotUrl);
+    } else if (response.id) {
+      // Generate snapshot URL from response data if not provided
+      const baseUrl = apiUrl.replace('/api/snapshot', '');
+      const snapshotUrl = `${baseUrl}/snapshot/${response.id}`;
+      core.setOutput('snapshot-url', snapshotUrl);
     }
 
     // Create or update PR comment if in PR context

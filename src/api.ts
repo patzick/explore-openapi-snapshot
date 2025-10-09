@@ -1,16 +1,31 @@
 import * as core from '@actions/core';
 
 export interface ApiResponse {
-  success: boolean;
+  success?: boolean;
   snapshotUrl?: string;
   message?: string;
+  // Actual API response structure
+  id?: string;
+  name?: string;
+  projectId?: string;
+  status?: string;
+  hash?: string;
+  size?: number;
+  active?: boolean;
+  createdAt?: string;
+  modifiedAt?: string;
+  description?: string | null;
+  expiredAt?: string | null;
+  reason?: string | null;
   [key: string]: unknown;
 }
 
 export async function sendSchemaToApi(
   apiUrl: string,
   schema: Record<string, unknown>,
-  authToken: string
+  authToken: string,
+  project: string,
+  snapshotName: string
 ): Promise<ApiResponse> {
   try {
     const response = await fetch(apiUrl, {
@@ -19,7 +34,11 @@ export async function sendSchemaToApi(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authToken}`,
       },
-      body: JSON.stringify(schema),
+      body: JSON.stringify({
+        schema,
+        project,
+        name: snapshotName
+      }),
     });
 
     if (!response.ok) {

@@ -3,7 +3,7 @@ import * as github from "@actions/github";
 import { readFile } from "fs/promises";
 
 //#region src/api.ts
-async function sendSchemaToApi(apiUrl, schema, authToken) {
+async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName) {
 	try {
 		const response = await fetch(apiUrl, {
 			method: "POST",
@@ -11,14 +11,17 @@ async function sendSchemaToApi(apiUrl, schema, authToken) {
 				"Content-Type": "application/json",
 				"Authorization": `Bearer ${authToken}`
 			},
-			body: JSON.stringify(schema)
+			body: JSON.stringify({
+				schema,
+				project,
+				name: snapshotName
+			})
 		});
 		if (!response.ok) {
 			const errorText = await response.text();
 			throw new Error(`API request failed with status ${response.status}: ${errorText}`);
 		}
-		const data = await response.json();
-		return data;
+		return await response.json();
 	} catch (error) {
 		if (error instanceof Error) core.error(`Failed to send schema to API: ${error.message}`);
 		throw error;
@@ -84,20 +87,30 @@ function formatComment(response) {
 async function run() {
 	try {
 		const schemaFile = core.getInput("schema-file", { required: true });
-		const apiUrl = core.getInput("api-url", { required: true });
+		const project = core.getInput("project", { required: true });
+		const snapshotNameInput = core.getInput("snapshot-name");
 		const authToken = core.getInput("auth-token", { required: true });
 		const githubToken = core.getInput("github-token", { required: true });
+		const apiUrl = "https://editor-api.explore-openapi.dev/api/snapshot";
+		let snapshotName = snapshotNameInput;
+		if (!snapshotName) if (github.context.payload.pull_request) snapshotName = `${github.context.payload.pull_request.number}`;
+		else snapshotName = github.context.ref.replace("refs/heads/", "");
+		core.info(`Project: ${project}`);
+		core.info(`Snapshot name: ${snapshotName}`);
 		core.info(`Reading schema from: ${schemaFile}`);
 		const schemaContent = await readFile(schemaFile, "utf-8");
 		const schema = JSON.parse(schemaContent);
 		core.info(`Sending schema to API: ${apiUrl}`);
-		const response = await sendSchemaToApi(apiUrl, schema, authToken);
+		const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName);
 		core.info(`API response received: ${JSON.stringify(response)}`);
 		core.setOutput("response", JSON.stringify(response));
 		if (response.snapshotUrl) core.setOutput("snapshot-url", response.snapshotUrl);
+		else if (response.id) {
+			const snapshotUrl = `${apiUrl.replace("/api/snapshot", "")}/snapshot/${response.id}`;
+			core.setOutput("snapshot-url", snapshotUrl);
+		}
 		if (github.context.payload.pull_request) {
-			const octokit = github.getOctokit(githubToken);
-			await createOrUpdateComment(octokit, response);
+			await createOrUpdateComment(github.getOctokit(githubToken), response);
 			core.info("PR comment created/updated successfully");
 		} else core.warning("Not in a pull request context, skipping comment creation");
 		core.info("Action completed successfully!");
@@ -109,3 +122,4 @@ async function run() {
 run();
 
 //#endregion
+export {  };
