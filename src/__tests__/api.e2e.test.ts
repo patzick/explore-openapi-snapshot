@@ -20,7 +20,7 @@ function loadEnvFile() {
 
     return envVars;
   } catch (error) {
-    throw new Error('Failed to load .env file. Make sure it exists and contains required variables.');
+    throw new Error('Failed to load .env file. Make sure it exists and contains required variables. Error: ' + error);
   }
 }
 

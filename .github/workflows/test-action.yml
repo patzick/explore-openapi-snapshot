@@ -33,5 +33,5 @@ jobs:
         with:
           schema-file: "./example-schema.json"
           project: "test-project"
-          auth-token: ${{ secrets.API_AUTH_TOKEN }}
+          auth-token: ${{ secrets.EXPLORE_OPENAPI_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

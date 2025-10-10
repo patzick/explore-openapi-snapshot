@@ -75,7 +75,7 @@ jobs:
 
 ### API Endpoint
 
-The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/api/snapshot` with the following payload:
+The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/public/v1/snapshot` with the following payload:
 
 ```json
 {

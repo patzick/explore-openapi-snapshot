@@ -14,7 +14,7 @@ async function run(): Promise<void> {
     const githubToken = core.getInput('github-token', { required: true });
 
 
-    const apiUrl = 'https://editor-api.explore-openapi.dev/api/snapshot';
+    const apiUrl = 'https://editor-api.explore-openapi.dev/public/v1/snapshot';
 
     // Generate snapshot name: PR number if in PR context, otherwise branch name
     let snapshotName = snapshotNameInput;

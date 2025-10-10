@@ -24,7 +24,7 @@ describe('sendSchemaToApi', () => {
     });
 
     const result = await sendSchemaToApi(
-      'https://editor-api.explore-openapi.dev/api/snapshot',
+      'https://editor-api.explore-openapi.dev/public/v1/snapshot',
       { openapi: '3.0.0' },
       'test-token',
       'test-project',
@@ -33,7 +33,7 @@ describe('sendSchemaToApi', () => {
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://editor-api.explore-openapi.dev/api/snapshot',
+      'https://editor-api.explore-openapi.dev/public/v1/snapshot',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -58,7 +58,7 @@ describe('sendSchemaToApi', () => {
 
     await expect(
       sendSchemaToApi(
-        'https://editor-api.explore-openapi.dev/api/snapshot',
+        'https://editor-api.explore-openapi.dev/public/v1/snapshot',
         { openapi: '3.0.0' },
         'invalid-token',
         'test-project',
@@ -72,7 +72,7 @@ describe('sendSchemaToApi', () => {
 
     await expect(
       sendSchemaToApi(
-        'https://editor-api.explore-openapi.dev/api/snapshot',
+        'https://editor-api.explore-openapi.dev/public/v1/snapshot',
         { openapi: '3.0.0' },
         'test-token',
         'test-project',

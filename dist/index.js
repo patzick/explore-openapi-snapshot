@@ -91,7 +91,7 @@ async function run() {
 		const snapshotNameInput = core.getInput("snapshot-name");
 		const authToken = core.getInput("auth-token", { required: true });
 		const githubToken = core.getInput("github-token", { required: true });
-		const apiUrl = "https://editor-api.explore-openapi.dev/api/snapshot";
+		const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
 		let snapshotName = snapshotNameInput;
 		if (!snapshotName) if (github.context.payload.pull_request) snapshotName = `${github.context.payload.pull_request.number}`;
 		else snapshotName = github.context.ref.replace("refs/heads/", "");
