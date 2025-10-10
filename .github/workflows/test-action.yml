@@ -33,7 +33,7 @@ jobs:
         run: pnpm run build
 
       - name: Run OpenAPI Snapshot Action
-        uses: .
+        uses: ./
         with:
           schema-file: "./example-schema.json"
           project: "test-project"
