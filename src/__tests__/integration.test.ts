@@ -94,7 +94,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     });
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('https://explore-openapi.dev/view?projectId=project-def456&snapshotId=snapshot-abc123');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-def456&snapshot=snapshot-abc123');
     expect(commentBody).toContain('https://explore-openapi.dev/compare/project-def456/from/main/to/123');
     expect(commentBody).toContain('Snapshot created successfully');
     expect(commentBody).toContain('<!-- openapi-snapshot-comment -->');
@@ -201,7 +201,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     expect(mockOctokit.rest.issues.createComment).not.toHaveBeenCalled();
 
     const commentBody = mockOctokit.rest.issues.updateComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('https://explore-openapi.dev/view?projectId=project-ghi789&snapshotId=snapshot-def456');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-ghi789&snapshot=snapshot-def456');
     expect(commentBody).toContain('https://explore-openapi.dev/compare/project-ghi789/from/main/to/123');
     expect(commentBody).toContain('Snapshot updated successfully');
   });
@@ -328,7 +328,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain('✅ Successfully created snapshot!');
-    expect(commentBody).toContain('https://explore-openapi.dev/view?projectId=project-minimal&snapshotId=snapshot-minimal');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-minimal&snapshot=snapshot-minimal');
     expect(commentBody).toContain('https://explore-openapi.dev/compare/project-minimal/from/main/to/123');
     expect(commentBody).not.toContain('📝');
   });
@@ -390,6 +390,6 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain('✅ Successfully created snapshot!');
-    expect(commentBody).toContain('https://explore-openapi.dev/view?projectId=project-branch&snapshotId=snapshot-permanent');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-branch&snapshot=snapshot-permanent');
   });
 });

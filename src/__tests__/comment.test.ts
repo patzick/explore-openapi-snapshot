@@ -70,7 +70,7 @@ describe('createOrUpdateComment', () => {
       owner: 'test-owner',
       repo: 'test-repo',
       issue_number: 123,
-      body: expect.stringContaining('OpenAPI Snapshot Created'),
+      body: expect.stringContaining('OpenAPI Snapshot'),
     });
   });
 
@@ -90,7 +90,7 @@ describe('createOrUpdateComment', () => {
       owner: 'test-owner',
       repo: 'test-repo',
       comment_id: 456,
-      body: expect.stringContaining('OpenAPI Snapshot Created'),
+      body: expect.stringContaining('OpenAPI Snapshot'),
     });
   });
 
@@ -105,7 +105,7 @@ describe('createOrUpdateComment', () => {
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('✅ Successfully created snapshot!');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/view?projectId=project-456&snapshotId=snapshot-123');
+    expect(callArgs.body).toContain('https://explore-openapi.dev/view?project=project-456&snapshot=snapshot-123');
     expect(callArgs.body).toContain('https://explore-openapi.dev/compare/project-456/from/main/to/123');
     expect(callArgs.body).toContain('Snapshot created successfully');
   });
@@ -149,7 +149,7 @@ describe('createOrUpdateComment', () => {
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('✅ Successfully created snapshot!');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/view?projectId=project-456&snapshotId=snapshot-123');
+    expect(callArgs.body).toContain('https://explore-openapi.dev/view?project=project-456&snapshot=snapshot-123');
     expect(callArgs.body).toContain('https://explore-openapi.dev/compare/project-456/from/main/to/123');
     expect(callArgs.body).not.toContain('📝');
   });
@@ -165,7 +165,7 @@ describe('createOrUpdateComment', () => {
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('✅ Successfully created snapshot!');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/view?projectId=project-456&snapshotId=snapshot-123');
+    expect(callArgs.body).toContain('https://explore-openapi.dev/view?project=project-456&snapshot=snapshot-123');
     expect(callArgs.body).toContain('📝 Snapshot created with warnings');
   });
 

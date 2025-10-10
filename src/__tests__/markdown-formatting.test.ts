@@ -71,13 +71,13 @@ describe('Markdown Formatting in Comments', () => {
     expect(commentBody).toMatch(/^<!-- openapi-snapshot-comment -->/);
 
     // Check markdown heading
-    expect(commentBody).toContain('## 📸 OpenAPI Snapshot Created');
+    expect(commentBody).toContain('## 📸 OpenAPI Snapshot');
 
     // Check success emoji and text
     expect(commentBody).toContain('✅ Successfully created snapshot!');
 
     // Check bold markdown for URL labels
-    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=project-test456&snapshotId=snapshot-test123');
+    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=project-test456&snapshot=snapshot-test123');
     expect(commentBody).toContain('🔄 **Compare URL:** https://explore-openapi.dev/compare/project-test456/from/main/to/123');
 
     // Check message formatting
@@ -86,7 +86,7 @@ describe('Markdown Formatting in Comments', () => {
     // Verify proper line breaks
     const lines = commentBody.split('\n');
     expect(lines[0]).toBe('<!-- openapi-snapshot-comment -->');
-    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot Created');
+    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot');
     expect(lines[2]).toBe('');
     expect(lines[3]).toBe('✅ Successfully created snapshot!');
   });
@@ -103,7 +103,7 @@ describe('Markdown Formatting in Comments', () => {
     expect(commentBody).toMatch(/^<!-- openapi-snapshot-comment -->/);
 
     // Check markdown heading
-    expect(commentBody).toContain('## 📸 OpenAPI Snapshot Created');
+    expect(commentBody).toContain('## 📸 OpenAPI Snapshot');
 
     // Check error emoji and text
     expect(commentBody).toContain('❌ Failed to create snapshot');
@@ -114,7 +114,7 @@ describe('Markdown Formatting in Comments', () => {
     // Verify proper line breaks
     const lines = commentBody.split('\n');
     expect(lines[0]).toBe('<!-- openapi-snapshot-comment -->');
-    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot Created');
+    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot');
     expect(lines[2]).toBe('');
     expect(lines[3]).toBe('❌ Failed to create snapshot');
     expect(lines[4]).toBe('');
@@ -128,7 +128,7 @@ describe('Markdown Formatting in Comments', () => {
     }));
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=project-special-chars&snapshotId=test-123_abc');
+    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=project-special-chars&snapshot=test-123_abc');
   });
 
   it('should handle messages with markdown characters', async () => {
@@ -162,7 +162,7 @@ describe('Markdown Formatting in Comments', () => {
 
     // Should still have basic structure
     expect(commentBody).toContain('<!-- openapi-snapshot-comment -->');
-    expect(commentBody).toContain('## 📸 OpenAPI Snapshot Created');
+    expect(commentBody).toContain('## 📸 OpenAPI Snapshot');
     expect(commentBody).toContain('✅ Successfully created snapshot!');
 
     // Should contain URLs but not message section
@@ -180,7 +180,7 @@ describe('Markdown Formatting in Comments', () => {
     }));
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${longProjectId}&snapshotId=${longId}`);
+    expect(commentBody).toContain(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${longProjectId}&snapshot=${longId}`);
   });
 
   it('should handle very long messages without breaking markdown', async () => {

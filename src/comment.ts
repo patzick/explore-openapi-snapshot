@@ -53,7 +53,7 @@ export async function createOrUpdateComment(
 function formatComment(response: ApiResponse | { success: false; message: string }): string {
   const lines = [
     COMMENT_IDENTIFIER,
-    '## 📸 OpenAPI Snapshot Created',
+    '## 📸 OpenAPI Snapshot',
     '',
   ];
 
@@ -74,7 +74,7 @@ function formatComment(response: ApiResponse | { success: false; message: string
   // Generate snapshot URL
   if (apiResponse.id && apiResponse.projectId) {
     lines.push('');
-    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${apiResponse.projectId}&snapshotId=${apiResponse.id}`);
+    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${apiResponse.projectId}&snapshot=${apiResponse.id}`);
   }
 
   // Generate compare URL if in PR context

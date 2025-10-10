@@ -19884,7 +19884,7 @@ async function createOrUpdateComment(octokit, response) {
 function formatComment(response) {
 	const lines = [
 		COMMENT_IDENTIFIER,
-		"## 📸 OpenAPI Snapshot Created",
+		"## 📸 OpenAPI Snapshot",
 		""
 	];
 	if ("success" in response && response.success === false) {
@@ -19899,7 +19899,7 @@ function formatComment(response) {
 	lines.push("✅ Successfully created snapshot!");
 	if (apiResponse.id && apiResponse.projectId) {
 		lines.push("");
-		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${apiResponse.projectId}&snapshotId=${apiResponse.id}`);
+		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${apiResponse.projectId}&snapshot=${apiResponse.id}`);
 	}
 	const { context } = import_github$1;
 	const prNumber = context.payload.pull_request?.number;
