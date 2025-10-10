@@ -13,9 +13,18 @@ describe('sendSchemaToApi', () => {
 
   it('should send schema to API successfully', async () => {
     const mockResponse = {
-      success: true,
-      snapshotUrl: 'https://example.com/snapshot/123',
-      message: 'Snapshot created',
+      id: 'snapshot-123',
+      projectId: 'project-456',
+      name: 'test-snapshot',
+      status: 'available',
+      hash: 'abc123',
+      size: 1024,
+      active: true,
+      createdAt: '2023-01-01T00:00:00Z',
+      modifiedAt: '2023-01-01T00:00:00Z',
+      description: null,
+      expiredAt: null,
+      reason: null,
     };
 
     fetchMock.mockResolvedValueOnce({

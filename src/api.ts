@@ -1,22 +1,22 @@
 import * as core from '@actions/core';
 
 export interface ApiResponse {
-  success?: boolean;
-  snapshotUrl?: string;
-  message?: string;
   // Actual API response structure
-  id?: string;
-  name?: string;
-  projectId?: string;
-  status?: string;
-  hash?: string;
-  size?: number;
-  active?: boolean;
-  createdAt?: string;
-  modifiedAt?: string;
-  description?: string | null;
-  expiredAt?: string | null;
-  reason?: string | null;
+  id: string;
+  name: string;
+  projectId: string;
+  status: string;
+  hash: string;
+  size: number;
+  active: boolean;
+  createdAt: string;
+  modifiedAt: string;
+  description: string | null;
+  expiredAt: string | null;
+  reason: string | null;
+  // For error handling
+  success?: boolean;
+  message?: string;
   [key: string]: unknown;
 }
 

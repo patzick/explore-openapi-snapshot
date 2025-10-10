@@ -46,12 +46,9 @@ async function run(): Promise<void> {
 
     // Set outputs
     core.setOutput('response', JSON.stringify(response));
-    if (response.snapshotUrl) {
-      core.setOutput('snapshot-url', response.snapshotUrl);
-    } else if (response.id) {
-      // Generate snapshot URL from response data if not provided
-      const baseUrl = apiUrl.replace('/api/snapshot', '');
-      const snapshotUrl = `${baseUrl}/snapshot/${response.id}`;
+    if (response.id && response.projectId) {
+      // Generate snapshot URL from response data
+      const snapshotUrl = `https://explore-openapi.dev/view?projectId=${response.projectId}&snapshotId=${response.id}`;
       core.setOutput('snapshot-url', snapshotUrl);
     }
 
@@ -66,10 +63,22 @@ async function run(): Promise<void> {
 
     core.info('Action completed successfully!');
   } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(`Action failed: ${error.message}`);
-    } else {
-      core.setFailed('Action failed with unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    core.setFailed(`Action failed: ${errorMessage}`);
+
+    // Create error comment in PR if possible
+    if (github.context.payload.pull_request) {
+      try {
+        const githubToken = core.getInput('github-token', { required: true });
+        const octokit = github.getOctokit(githubToken);
+        await createOrUpdateComment(octokit, {
+          success: false,
+          message: errorMessage
+        });
+        core.info('Error comment created in PR');
+      } catch (commentError) {
+        core.warning(`Failed to create error comment: ${commentError instanceof Error ? commentError.message : 'Unknown error'}`);
+      }
     }
   }
 }

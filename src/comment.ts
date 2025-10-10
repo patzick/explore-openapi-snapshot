@@ -7,13 +7,13 @@ const COMMENT_IDENTIFIER = '<!-- openapi-snapshot-comment -->';
 
 export async function createOrUpdateComment(
   octokit: GitHub,
-  response: ApiResponse
+  response: ApiResponse | { success: false; message: string }
 ): Promise<void> {
   const { context } = github;
   const { owner, repo } = context.repo;
   const issue_number = context.payload.pull_request?.number;
 
-  if (!issue_number) {
+  if (!issue_number || issue_number <= 0) {
     throw new Error('No pull request number found');
   }
 
@@ -50,29 +50,47 @@ export async function createOrUpdateComment(
   }
 }
 
-function formatComment(response: ApiResponse): string {
+function formatComment(response: ApiResponse | { success: false; message: string }): string {
   const lines = [
     COMMENT_IDENTIFIER,
     '## 📸 OpenAPI Snapshot Created',
     '',
   ];
 
-  if (response.success) {
-    lines.push('✅ Successfully created snapshot!');
-    if (response.snapshotUrl) {
-      lines.push('');
-      lines.push(`🔗 **Snapshot URL:** ${response.snapshotUrl}`);
-    }
-    if (response.message) {
-      lines.push('');
-      lines.push(`📝 ${response.message}`);
-    }
-  } else {
+  // Check if this is an error response
+  if ('success' in response && response.success === false) {
     lines.push('❌ Failed to create snapshot');
     if (response.message) {
       lines.push('');
       lines.push(`**Error:** ${response.message}`);
     }
+    return lines.join('\n');
+  }
+
+  // Handle successful API response
+  const apiResponse = response as ApiResponse;
+  lines.push('✅ Successfully created snapshot!');
+
+  // Generate snapshot URL
+  if (apiResponse.id && apiResponse.projectId) {
+    lines.push('');
+    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${apiResponse.projectId}&snapshotId=${apiResponse.id}`);
+  }
+
+  // Generate compare URL if in PR context
+  const { context } = github;
+  const prNumber = context.payload.pull_request?.number;
+  const baseBranch = context.payload.pull_request?.base?.ref;
+
+  if (apiResponse.projectId && prNumber && baseBranch) {
+    lines.push('');
+    lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${apiResponse.projectId}/from/${baseBranch}/to/${prNumber}`);
+  }
+
+  // Add any additional message
+  if (apiResponse.message) {
+    lines.push('');
+    lines.push(`📝 ${apiResponse.message}`);
   }
 
   return lines.join('\n');
