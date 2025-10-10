@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createOrUpdateComment } from '../comment.js';
-import * as github from '@actions/github';
 
 // Mock @actions/github
 vi.mock('@actions/github', () => ({

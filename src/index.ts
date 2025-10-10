@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     const snapshotNameInput = core.getInput('snapshot-name');
     const authToken = core.getInput('auth-token', { required: true });
     const githubToken = core.getInput('github-token', { required: true });
-
+    const permanentInput = core.getInput('permanent');
 
     const apiUrl = 'https://editor-api.explore-openapi.dev/public/v1/snapshot';
 
@@ -22,14 +22,31 @@ async function run(): Promise<void> {
       if (github.context.payload.pull_request) {
         snapshotName = `${github.context.payload.pull_request.number}`;
       } else {
-        // Extract branch name from ref (refs/heads/branch-name -> branch-name)
+        // Extract branch/tag name from ref
         const ref = github.context.ref;
-        snapshotName = ref.replace('refs/heads/', '');
+        if (ref.startsWith('refs/heads/')) {
+          snapshotName = ref.replace('refs/heads/', '');
+        } else if (ref.startsWith('refs/tags/')) {
+          snapshotName = ref.replace('refs/tags/', '');
+        } else {
+          snapshotName = ref;
+        }
       }
+    }
+
+    // Determine if snapshot should be permanent
+    // Permanent if explicitly set, or if not in PR context (branch/tag push)
+    let permanent = false;
+    if (permanentInput) {
+      permanent = permanentInput.toLowerCase() === 'true';
+    } else {
+      // Default: permanent for branch/tag pushes, temporary for PRs
+      permanent = !github.context.payload.pull_request;
     }
 
     core.info(`Project: ${project}`);
     core.info(`Snapshot name: ${snapshotName}`);
+    core.info(`Permanent snapshot: ${permanent}`);
 
     core.info(`Reading schema from: ${schemaFile}`);
 
@@ -40,7 +57,7 @@ async function run(): Promise<void> {
     core.info(`Sending schema to API: ${apiUrl}`);
 
     // Send schema to API
-    const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName);
+    const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName, permanent);
 
     core.info(`API response received: ${JSON.stringify(response)}`);
 

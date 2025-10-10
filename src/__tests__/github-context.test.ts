@@ -18,6 +18,25 @@ vi.mock('@actions/github', () => ({
   getOctokit: vi.fn(),
 }));
 
+// Helper function to create mock API responses
+function createMockApiResponse(overrides: Partial<any> = {}) {
+  return {
+    id: 'snapshot-123',
+    projectId: 'project-456',
+    name: 'test-snapshot',
+    status: 'available',
+    hash: 'abc123',
+    size: 1024,
+    active: true,
+    createdAt: '2023-01-01T00:00:00Z',
+    modifiedAt: '2023-01-01T00:00:00Z',
+    description: null,
+    expiredAt: null,
+    reason: null,
+    ...overrides,
+  };
+}
+
 describe('GitHub Context Scenarios', () => {
   let mockOctokit: any;
   let originalContext: any;
@@ -49,7 +68,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -62,7 +81,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -78,7 +97,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -100,10 +119,9 @@ describe('GitHub Context Scenarios', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, {
-      success: true,
+    await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Test in different repo',
-    });
+    }));
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: 'different-owner',
@@ -125,7 +143,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -140,7 +158,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -156,7 +174,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -179,10 +197,9 @@ describe('GitHub Context Scenarios', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, {
-      success: true,
+    await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'PR target event test',
-    });
+    }));
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: 'test-owner',
@@ -203,7 +220,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -218,7 +235,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, { success: true })
+      createOrUpdateComment(mockOctokit, createMockApiResponse())
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -239,7 +256,7 @@ describe('GitHub Context Scenarios', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, { success: true });
+    await createOrUpdateComment(mockOctokit, createMockApiResponse());
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: undefined,
@@ -267,7 +284,7 @@ describe('GitHub Context Scenarios', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, { success: true });
+    await createOrUpdateComment(mockOctokit, createMockApiResponse());
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: '',

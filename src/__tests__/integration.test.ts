@@ -76,7 +76,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       { openapi: '3.0.0', info: { title: 'Test API', version: '1.0.0' } },
       'test-token',
       'test-project',
-      'test-snapshot'
+      'test-snapshot',
+      false
     );
 
     expect(apiResult).toEqual(mockApiResponse);
@@ -119,7 +120,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
         { openapi: '3.0.0' },
         'invalid-token',
         'test-project',
-        'test-snapshot'
+        'test-snapshot',
+        false
       )
     ).rejects.toThrow('API request failed with status 401');
 
@@ -182,7 +184,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       { openapi: '3.0.0', info: { title: 'Updated API', version: '1.1.0' } },
       'test-token',
       'test-project',
-      'test-snapshot'
+      'test-snapshot',
+      false
     );
 
     // Step 2: Update existing PR comment
@@ -219,7 +222,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
         { openapi: '3.0.0' },
         'test-token',
         'test-project',
-        'test-snapshot'
+        'test-snapshot',
+        false
       )
     ).rejects.toThrow('Network connection failed');
 
@@ -271,7 +275,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       { openapi: '3.0.0' },
       'test-token',
       'test-project',
-      'test-snapshot'
+      'test-snapshot',
+      false
     );
 
     expect(apiResult).toEqual(mockApiResponse);
@@ -315,7 +320,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       { openapi: '3.0.0' },
       'test-token',
       'test-project',
-      'test-snapshot'
+      'test-snapshot',
+      false
     );
 
     await createOrUpdateComment(mockOctokit, apiResult);
@@ -325,5 +331,65 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     expect(commentBody).toContain('https://explore-openapi.dev/view?projectId=project-minimal&snapshotId=snapshot-minimal');
     expect(commentBody).toContain('https://explore-openapi.dev/compare/project-minimal/from/main/to/123');
     expect(commentBody).not.toContain('📝');
+  });
+
+  it('should send permanent flag correctly for branch/tag context', async () => {
+    // Mock successful API response for permanent snapshot
+    const mockApiResponse = {
+      id: 'snapshot-permanent',
+      projectId: 'project-branch',
+      name: 'branch-snapshot',
+      status: 'available',
+      hash: 'hashperm',
+      size: 2048,
+      active: true,
+      createdAt: '2023-01-01T00:00:00Z',
+      modifiedAt: '2023-01-01T00:00:00Z',
+      description: null,
+      expiredAt: null,
+      reason: null,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockApiResponse,
+    });
+
+    mockOctokit.rest.issues.listComments.mockResolvedValueOnce({
+      data: [],
+    });
+
+    // Test with permanent flag set to true
+    const apiResult = await sendSchemaToApi(
+      'https://api.example.com/snapshot',
+      { openapi: '3.0.0' },
+      'test-token',
+      'test-project',
+      'branch-snapshot',
+      true
+    );
+
+    expect(apiResult).toEqual(mockApiResponse);
+
+    // Verify the API was called with permanent: true
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.example.com/snapshot',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          schema: { openapi: '3.0.0' },
+          project: 'test-project',
+          name: 'branch-snapshot',
+          permanent: true
+        }),
+      })
+    );
+
+    // Create PR comment
+    await createOrUpdateComment(mockOctokit, apiResult);
+
+    const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
+    expect(commentBody).toContain('✅ Successfully created snapshot!');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?projectId=project-branch&snapshotId=snapshot-permanent');
   });
 });

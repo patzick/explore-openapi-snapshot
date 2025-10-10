@@ -19,6 +19,9 @@ inputs:
     description: "GitHub token for commenting on PR"
     required: true
     default: ${{ github.token }}
+  permanent:
+    description: "Whether to create a permanent snapshot (defaults to true for branch/tag pushes, false for PRs)"
+    required: false
 
 outputs:
   snapshot-url:

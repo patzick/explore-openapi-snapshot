@@ -1,0 +1,103 @@
+# AI Agent Instructions for explore-openapi-snapshot
+
+## Mandatory Quality Checks
+
+After making ANY code changes to this project, you MUST run the following commands in order and ensure they all pass:
+
+### 1. Build Check
+```bash
+pnpm run build
+```
+- Ensures TypeScript compiles correctly
+- Generates the dist/index.js file required for the GitHub Action
+- Must complete without errors
+
+### 2. Type Check
+```bash
+pnpm run typecheck
+```
+- Validates TypeScript types across the entire codebase
+- Catches type errors that might not appear during build
+- Must complete with exit code 0
+
+### 3. Linting
+```bash
+pnpm run lint
+```
+- Runs oxlint for code quality and style consistency
+- Enforces project coding standards
+- Must complete without errors or warnings
+
+### 4. Test Suite
+```bash
+pnpm test
+```
+- Runs all unit and integration tests
+- Validates functionality across all modules
+- All tests must pass (currently 53 tests)
+- Pay attention to test coverage and add tests for new functionality
+
+## Code Change Workflow
+
+1. **Make your code changes**
+2. **Run all quality checks** (build, typecheck, lint, test)
+3. **Fix any issues** that arise from the checks
+4. **Re-run checks** until all pass
+5. **Only then** consider the changes complete
+
+### Quick Quality Check
+You can run all checks at once with:
+```bash
+pnpm run quality-check
+```
+This runs build → typecheck → lint → test in sequence and stops on first failure.
+
+## Project-Specific Guidelines
+
+### TypeScript
+- Avoid using `any` type - always try to match correct types
+- Maintain strict type safety throughout the codebase
+- Update type definitions when adding new functionality
+
+### Testing
+- Add tests for any new functionality
+- Update existing tests when modifying behavior
+- Maintain test coverage for all critical paths
+- Use the helper functions in tests for consistency
+
+### API Changes
+- Update the `ApiResponse` interface when API structure changes
+- Update all test mocks to match new API structure
+- Ensure backward compatibility where possible
+
+### Documentation
+- Update README.md when adding new features or changing behavior
+- Update action.yml when adding new inputs or outputs
+- Keep examples in documentation current and working
+
+## File Structure Awareness
+
+Key files that often need updates together:
+- `src/api.ts` - API communication logic
+- `src/comment.ts` - PR comment creation
+- `src/index.ts` - Main action entry point
+- `action.yml` - GitHub Action metadata
+- `README.md` - User documentation
+
+## Error Handling
+
+If any quality check fails:
+1. **Read the error message carefully**
+2. **Fix the underlying issue** (don't just suppress warnings)
+3. **Re-run all checks** to ensure the fix doesn't break something else
+4. **Consider if the change requires test updates**
+
+## Success Criteria
+
+Changes are only complete when:
+- ✅ `pnpm run build` - exits with code 0
+- ✅ `pnpm run typecheck` - exits with code 0  
+- ✅ `pnpm run lint` - exits with code 0
+- ✅ `pnpm test` - all tests pass
+
+**Remember: These checks are not optional. They ensure code quality, prevent regressions, and maintain the reliability of the GitHub Action.**

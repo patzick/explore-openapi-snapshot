@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "quality-check": "pnpm run build && pnpm run typecheck && pnpm run lint && pnpm test"
   },
   "keywords": [
     "github-action",

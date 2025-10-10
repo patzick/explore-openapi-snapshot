@@ -19,19 +19,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-
-      - name: Install dependencies
-        run: pnpm i --frozen-lockfile --prefer-offline
-
-      - name: Build action
-        run: pnpm run build
-
       - name: Run OpenAPI Snapshot Action
         uses: ./
         with:

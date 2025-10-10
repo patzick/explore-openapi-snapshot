@@ -3,7 +3,7 @@ import * as github from "@actions/github";
 import { readFile } from "fs/promises";
 
 //#region src/api.ts
-async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName) {
+async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName, permanent = false) {
 	try {
 		const response = await fetch(apiUrl, {
 			method: "POST",
@@ -14,7 +14,8 @@ async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName)
 			body: JSON.stringify({
 				schema,
 				project,
-				name: snapshotName
+				name: snapshotName,
+				permanent
 			})
 		});
 		if (!response.ok) {
@@ -99,17 +100,27 @@ async function run() {
 		const snapshotNameInput = core.getInput("snapshot-name");
 		const authToken = core.getInput("auth-token", { required: true });
 		const githubToken = core.getInput("github-token", { required: true });
+		const permanentInput = core.getInput("permanent");
 		const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
 		let snapshotName = snapshotNameInput;
 		if (!snapshotName) if (github.context.payload.pull_request) snapshotName = `${github.context.payload.pull_request.number}`;
-		else snapshotName = github.context.ref.replace("refs/heads/", "");
+		else {
+			const ref = github.context.ref;
+			if (ref.startsWith("refs/heads/")) snapshotName = ref.replace("refs/heads/", "");
+			else if (ref.startsWith("refs/tags/")) snapshotName = ref.replace("refs/tags/", "");
+			else snapshotName = ref;
+		}
+		let permanent = false;
+		if (permanentInput) permanent = permanentInput.toLowerCase() === "true";
+		else permanent = !github.context.payload.pull_request;
 		core.info(`Project: ${project}`);
 		core.info(`Snapshot name: ${snapshotName}`);
+		core.info(`Permanent snapshot: ${permanent}`);
 		core.info(`Reading schema from: ${schemaFile}`);
 		const schemaContent = await readFile(schemaFile, "utf-8");
 		const schema = JSON.parse(schemaContent);
 		core.info(`Sending schema to API: ${apiUrl}`);
-		const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName);
+		const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName, permanent);
 		core.info(`API response received: ${JSON.stringify(response)}`);
 		core.setOutput("response", JSON.stringify(response));
 		if (response.id && response.projectId) {

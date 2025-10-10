@@ -25,7 +25,8 @@ export async function sendSchemaToApi(
   schema: Record<string, unknown>,
   authToken: string,
   project: string,
-  snapshotName: string
+  snapshotName: string,
+  permanent: boolean = false
 ): Promise<ApiResponse> {
   try {
     const response = await fetch(apiUrl, {
@@ -37,7 +38,8 @@ export async function sendSchemaToApi(
       body: JSON.stringify({
         schema,
         project,
-        name: snapshotName
+        name: snapshotName,
+        permanent
       }),
     });
 
