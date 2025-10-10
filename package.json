@@ -5,13 +5,13 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsdown src/index.ts --format esm --platform node",
+    "build": "tsdown",
     "lint": "oxlint src",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "typecheck": "tsc --noEmit",
-    "quality-check": "pnpm run build && pnpm run typecheck && pnpm run lint && pnpm test"
+    "quality-check": "pnpm build && pnpm typecheck && pnpm lint && pnpm test"
   },
   "keywords": [
     "github-action",

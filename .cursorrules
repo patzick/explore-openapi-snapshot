@@ -6,7 +6,7 @@ After making ANY code changes to this project, you MUST run the following comman
 
 ### 1. Build Check
 ```bash
-pnpm run build
+pnpm build
 ```
 - Ensures TypeScript compiles correctly
 - Generates the dist/index.js file required for the GitHub Action
@@ -14,7 +14,7 @@ pnpm run build
 
 ### 2. Type Check
 ```bash
-pnpm run typecheck
+pnpm typecheck
 ```
 - Validates TypeScript types across the entire codebase
 - Catches type errors that might not appear during build
@@ -22,7 +22,7 @@ pnpm run typecheck
 
 ### 3. Linting
 ```bash
-pnpm run lint
+pnpm lint
 ```
 - Runs oxlint for code quality and style consistency
 - Enforces project coding standards
@@ -48,7 +48,7 @@ pnpm test
 ### Quick Quality Check
 You can run all checks at once with:
 ```bash
-pnpm run quality-check
+pnpm quality-check
 ```
 This runs build → typecheck → lint → test in sequence and stops on first failure.
 
@@ -95,9 +95,9 @@ If any quality check fails:
 ## Success Criteria
 
 Changes are only complete when:
-- ✅ `pnpm run build` - exits with code 0
-- ✅ `pnpm run typecheck` - exits with code 0  
-- ✅ `pnpm run lint` - exits with code 0
+- ✅ `pnpm build` - exits with code 0
+- ✅ `pnpm typecheck` - exits with code 0  
+- ✅ `pnpm lint` - exits with code 0
 - ✅ `pnpm test` - all tests pass
 
 **Remember: These checks are not optional. They ensure code quality, prevent regressions, and maintain the reliability of the GitHub Action.**
