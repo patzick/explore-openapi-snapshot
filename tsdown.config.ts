@@ -5,7 +5,8 @@ export default defineConfig({
   format: 'esm',
   platform: 'node',
   target: 'node24',
-  external: [], // Bundle all dependencies
+  external: [],
+  noExternal: ['@actions/core', '@actions/github'],
   clean: true,
   outDir: 'dist'
 })
