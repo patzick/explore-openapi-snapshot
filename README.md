@@ -9,6 +9,8 @@ GitHub Action to create a snapshot of OpenAPI schema at https://explore-openapi.
 - 📁 Project-based organization
 - 🔐 Secure authentication with auth token
 - 💬 Automatic PR comment creation/update with snapshot results
+- ⏰ **Smart snapshot retention**: Permanent snapshots for branches/tags, temporary for PRs (30-day retention)
+- 🔗 **Dual URLs**: Direct snapshot view + compare URLs for easy diff visualization
 - ⚡ Built with modern TypeScript tools (tsdown, vitest, oxlint)
 - 🎯 Node 24+ support
 
@@ -53,6 +55,7 @@ jobs:
     schema-file: './api/openapi.json'
     project: 'my-api-project'
     snapshot-name: 'v2.1.0-beta'
+    permanent: 'true'  # Override default behavior
     auth-token: ${{ secrets.API_AUTH_TOKEN }}
     github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -64,6 +67,7 @@ jobs:
 | `schema-file` | Path to the JSON schema file | Yes | - |
 | `project` | Project name or project ID | Yes | - |
 | `snapshot-name` | Snapshot name (auto-generated if not provided) | No | PR number (in PR context) or branch name |
+| `permanent` | Whether to create a permanent snapshot | No | `true` for branch/tag pushes, `false` for PRs |
 | `auth-token` | Authentication token for API | Yes | - |
 | `github-token` | GitHub token for commenting on PR | Yes | `${{ github.token }}` |
 
@@ -71,7 +75,32 @@ jobs:
 
 - **In Pull Request context**: Uses PR number (e.g., `123` for PR #123)
 - **In Branch context**: Uses branch name (e.g., `feature/new-endpoint`)
+- **In Tag context**: Uses tag name (e.g., `v1.0.0` for tag `refs/tags/v1.0.0`)
 - **Custom**: Provide your own `snapshot-name` to override automatic naming
+
+#### Snapshot Retention Policy
+
+The action automatically determines snapshot retention based on context:
+
+| Context | Permanent | Retention | Use Case |
+|---------|-----------|-----------|----------|
+| **Pull Request** | `false` | **30 days** | Temporary snapshots for review and testing |
+| **Branch Push** | `true` | **Permanent** | Long-term snapshots for development branches |
+| **Tag Push** | `true` | **Permanent** | Release snapshots and version history |
+
+**Key Benefits:**
+- 🗑️ **Automatic cleanup**: PR snapshots are automatically removed after 30 days to keep your project organized
+- 📚 **Permanent history**: Branch and tag snapshots are kept permanently for long-term reference
+- 🎛️ **Manual override**: Use the `permanent` input to override the default behavior when needed
+
+**Override Examples:**
+```yaml
+# Force permanent snapshot for a PR (useful for important feature branches)
+permanent: 'true'
+
+# Create temporary snapshot for a branch push (useful for experimental branches)
+permanent: 'false'
+```
 
 ### API Endpoint
 
@@ -81,7 +110,8 @@ The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/
 {
   "schema": { /* your OpenAPI schema */ },
   "project": "your-project-name",
-  "name": "your-snapshot-name"
+  "name": "your-snapshot-name",
+  "permanent": true
 }
 ```
 
@@ -91,6 +121,28 @@ The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/
 |--------|-------------|
 | `snapshot-url` | URL to the created snapshot |
 | `response` | Full API response as JSON string |
+
+### PR Comments
+
+When running in a Pull Request context, the action automatically creates or updates a comment with:
+
+- ✅ **Success/failure status**
+- 🔗 **Snapshot URL**: Direct link to view the snapshot (`https://explore-openapi.dev/view?projectId=xxx&snapshotId=yyy`)
+- 🔄 **Compare URL**: Link to compare changes against the base branch (`https://explore-openapi.dev/compare/projectId/from/baseBranch/to/prNumber`)
+- 📝 **Additional messages** from the API response
+
+**Example PR Comment:**
+```markdown
+## 📸 OpenAPI Snapshot Created
+
+✅ Successfully created snapshot!
+
+🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=my-project&snapshotId=snapshot-123
+
+🔄 **Compare URL:** https://explore-openapi.dev/compare/my-project/from/main/to/456
+
+📝 Schema validation passed with 2 warnings
+```
 
 ## Development
 

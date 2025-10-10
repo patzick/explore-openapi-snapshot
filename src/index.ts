@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     const snapshotNameInput = core.getInput('snapshot-name');
     const authToken = core.getInput('auth-token', { required: true });
     const githubToken = core.getInput('github-token', { required: true });
-
+    const permanentInput = core.getInput('permanent');
 
     const apiUrl = 'https://editor-api.explore-openapi.dev/public/v1/snapshot';
 
@@ -22,14 +22,31 @@ async function run(): Promise<void> {
       if (github.context.payload.pull_request) {
         snapshotName = `${github.context.payload.pull_request.number}`;
       } else {
-        // Extract branch name from ref (refs/heads/branch-name -> branch-name)
+        // Extract branch/tag name from ref
         const ref = github.context.ref;
-        snapshotName = ref.replace('refs/heads/', '');
+        if (ref.startsWith('refs/heads/')) {
+          snapshotName = ref.replace('refs/heads/', '');
+        } else if (ref.startsWith('refs/tags/')) {
+          snapshotName = ref.replace('refs/tags/', '');
+        } else {
+          snapshotName = ref;
+        }
       }
+    }
+
+    // Determine if snapshot should be permanent
+    // Permanent if explicitly set, or if not in PR context (branch/tag push)
+    let permanent = false;
+    if (permanentInput) {
+      permanent = permanentInput.toLowerCase() === 'true';
+    } else {
+      // Default: permanent for branch/tag pushes, temporary for PRs
+      permanent = !github.context.payload.pull_request;
     }
 
     core.info(`Project: ${project}`);
     core.info(`Snapshot name: ${snapshotName}`);
+    core.info(`Permanent snapshot: ${permanent}`);
 
     core.info(`Reading schema from: ${schemaFile}`);
 
@@ -40,18 +57,15 @@ async function run(): Promise<void> {
     core.info(`Sending schema to API: ${apiUrl}`);
 
     // Send schema to API
-    const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName);
+    const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName, permanent);
 
     core.info(`API response received: ${JSON.stringify(response)}`);
 
     // Set outputs
     core.setOutput('response', JSON.stringify(response));
-    if (response.snapshotUrl) {
-      core.setOutput('snapshot-url', response.snapshotUrl);
-    } else if (response.id) {
-      // Generate snapshot URL from response data if not provided
-      const baseUrl = apiUrl.replace('/api/snapshot', '');
-      const snapshotUrl = `${baseUrl}/snapshot/${response.id}`;
+    if (response.id && response.projectId) {
+      // Generate snapshot URL from response data
+      const snapshotUrl = `https://explore-openapi.dev/view?projectId=${response.projectId}&snapshotId=${response.id}`;
       core.setOutput('snapshot-url', snapshotUrl);
     }
 
@@ -66,10 +80,22 @@ async function run(): Promise<void> {
 
     core.info('Action completed successfully!');
   } catch (error) {
-    if (error instanceof Error) {
-      core.setFailed(`Action failed: ${error.message}`);
-    } else {
-      core.setFailed('Action failed with unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    core.setFailed(`Action failed: ${errorMessage}`);
+
+    // Create error comment in PR if possible
+    if (github.context.payload.pull_request) {
+      try {
+        const githubToken = core.getInput('github-token', { required: true });
+        const octokit = github.getOctokit(githubToken);
+        await createOrUpdateComment(octokit, {
+          success: false,
+          message: errorMessage
+        });
+        core.info('Error comment created in PR');
+      } catch (commentError) {
+        core.warning(`Failed to create error comment: ${commentError instanceof Error ? commentError.message : 'Unknown error'}`);
+      }
     }
   }
 }
