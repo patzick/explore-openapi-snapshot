@@ -1,0 +1,41 @@
+name: Test OpenAPI Snapshot Action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile --prefer-offline
+
+      - name: Build action
+        run: pnpm run build
+
+      - name: Run OpenAPI Snapshot Action
+        uses: .
+        with:
+          schema-file: "./example-schema.json"
+          project: "test-project"
+          auth-token: ${{ secrets.EXPLORE_OPENAPI_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

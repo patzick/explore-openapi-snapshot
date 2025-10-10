@@ -1,0 +1,35 @@
+name: "Explore OpenAPI Snapshot"
+description: "Create a snapshot of OpenAPI schema at https://explore-openapi.dev"
+author: "patzick"
+
+inputs:
+  schema-file:
+    description: "Path to the JSON schema file"
+    required: true
+  project:
+    description: "Project name or project ID"
+    required: true
+  snapshot-name:
+    description: "Snapshot name (defaults to PR number if in PR context, otherwise branch name)"
+    required: false
+  auth-token:
+    description: "Authentication token for API"
+    required: true
+  github-token:
+    description: "GitHub token for commenting on PR"
+    required: true
+    default: ${{ github.token }}
+
+outputs:
+  snapshot-url:
+    description: "URL to the created snapshot"
+  response:
+    description: "Full API response"
+
+runs:
+  using: "node24"
+  main: "dist/index.js"
+
+branding:
+  icon: "file-text"
+  color: "blue"
