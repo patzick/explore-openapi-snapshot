@@ -15,6 +15,7 @@
     "/users": {
       "get": {
         "summary": "List users",
+        "operationId": "getUsers",
         "description": "Returns a list of users",
         "responses": {
           "200": {
@@ -29,8 +30,27 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
-        }
+        },
+        "security": []
       }
     }
   },
