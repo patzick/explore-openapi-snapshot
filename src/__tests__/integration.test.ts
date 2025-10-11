@@ -83,7 +83,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     expect(apiResult).toEqual(mockApiResponse);
 
     // Step 2: Create PR comment with API result
-    await createOrUpdateComment(mockOctokit, apiResult);
+    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
 
     // Verify comment was created with correct content
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
@@ -94,8 +94,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     });
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-def456&snapshot=snapshot-abc123');
-    expect(commentBody).toContain('https://explore-openapi.dev/compare/project-def456/from/main/to/123');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot')
+    expect(commentBody).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
     expect(commentBody).toContain('Snapshot created successfully');
     expect(commentBody).toContain('<!-- openapi-snapshot-comment -->');
   });
@@ -131,7 +131,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       message: 'API request failed with status 401: Unauthorized',
     };
 
-    await createOrUpdateComment(mockOctokit, errorResponse);
+    await createOrUpdateComment(mockOctokit, errorResponse, 'test-project');
 
     // Verify error comment was created
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
@@ -189,7 +189,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     );
 
     // Step 2: Update existing PR comment
-    await createOrUpdateComment(mockOctokit, apiResult);
+    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
 
     // Verify comment was updated, not created
     expect(mockOctokit.rest.issues.updateComment).toHaveBeenCalledWith({
@@ -201,8 +201,8 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     expect(mockOctokit.rest.issues.createComment).not.toHaveBeenCalled();
 
     const commentBody = mockOctokit.rest.issues.updateComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-ghi789&snapshot=snapshot-def456');
-    expect(commentBody).toContain('https://explore-openapi.dev/compare/project-ghi789/from/main/to/123');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=updated-snapshot');
+    expect(commentBody).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
     expect(commentBody).toContain('Snapshot updated successfully');
   });
 
@@ -233,7 +233,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       message: 'Network connection failed',
     };
 
-    await createOrUpdateComment(mockOctokit, errorResponse);
+    await createOrUpdateComment(mockOctokit, errorResponse, 'test-project');
 
     // Verify error comment was created
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
@@ -283,7 +283,7 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     // Step 2: Comment creation should fail due to GitHub API error
     await expect(
-      createOrUpdateComment(mockOctokit, apiResult)
+      createOrUpdateComment(mockOctokit, apiResult, 'test-project')
     ).rejects.toThrow('GitHub API rate limit exceeded');
   });
 
@@ -324,12 +324,12 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       false
     );
 
-    await createOrUpdateComment(mockOctokit, apiResult);
+    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain('✅ Successfully created snapshot!');
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-minimal&snapshot=snapshot-minimal');
-    expect(commentBody).toContain('https://explore-openapi.dev/compare/project-minimal/from/main/to/123');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=minimal-snapshot');
+    expect(commentBody).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
     expect(commentBody).not.toContain('📝');
   });
 
@@ -386,10 +386,10 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     );
 
     // Create PR comment
-    await createOrUpdateComment(mockOctokit, apiResult);
+    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain('✅ Successfully created snapshot!');
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=project-branch&snapshot=snapshot-permanent');
+    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=branch-snapshot');
   });
 });
