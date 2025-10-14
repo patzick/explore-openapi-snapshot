@@ -72,7 +72,7 @@ async function run(): Promise<void> {
     // Create or update PR comment if in PR context
     if (github.context.payload.pull_request) {
       const octokit = github.getOctokit(githubToken);
-      await createOrUpdateComment(octokit, response);
+      await createOrUpdateComment(octokit, response, project);
       core.info('PR comment created/updated successfully');
     } else {
       core.warning('Not in a pull request context, skipping comment creation');
@@ -87,11 +87,12 @@ async function run(): Promise<void> {
     if (github.context.payload.pull_request) {
       try {
         const githubToken = core.getInput('github-token', { required: true });
+        const project = core.getInput('project', { required: true });
         const octokit = github.getOctokit(githubToken);
         await createOrUpdateComment(octokit, {
           success: false,
           message: errorMessage
-        });
+        }, project);
         core.info('Error comment created in PR');
       } catch (commentError) {
         core.warning(`Failed to create error comment: ${commentError instanceof Error ? commentError.message : 'Unknown error'}`);

@@ -19856,12 +19856,12 @@ async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName,
 //#endregion
 //#region src/comment.ts
 const COMMENT_IDENTIFIER = "<!-- openapi-snapshot-comment -->";
-async function createOrUpdateComment(octokit, response) {
+async function createOrUpdateComment(octokit, response, project) {
 	const { context } = import_github$1;
 	const { owner, repo } = context.repo;
 	const issue_number = context.payload.pull_request?.number;
 	if (!issue_number || issue_number <= 0) throw new Error("No pull request number found");
-	const commentBody = formatComment(response);
+	const commentBody = formatComment(response, project);
 	const { data: comments } = await octokit.rest.issues.listComments({
 		owner,
 		repo,
@@ -19881,10 +19881,10 @@ async function createOrUpdateComment(octokit, response) {
 		body: commentBody
 	});
 }
-function formatComment(response) {
+function formatComment(response, project) {
 	const lines = [
 		COMMENT_IDENTIFIER,
-		"## 📸 OpenAPI Snapshot Created",
+		"## 📸 OpenAPI Snapshot",
 		""
 	];
 	if ("success" in response && response.success === false) {
@@ -19897,16 +19897,16 @@ function formatComment(response) {
 	}
 	const apiResponse = response;
 	lines.push("✅ Successfully created snapshot!");
-	if (apiResponse.id && apiResponse.projectId) {
-		lines.push("");
-		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${apiResponse.projectId}&snapshotId=${apiResponse.id}`);
-	}
 	const { context } = import_github$1;
 	const prNumber = context.payload.pull_request?.number;
 	const baseBranch = context.payload.pull_request?.base?.ref;
-	if (apiResponse.projectId && prNumber && baseBranch) {
+	if (project && prNumber && baseBranch) {
 		lines.push("");
-		lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${apiResponse.projectId}/from/${baseBranch}/to/${prNumber}`);
+		lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+	}
+	if (apiResponse.id && project) {
+		lines.push("");
+		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
 	}
 	if (apiResponse.message) {
 		lines.push("");
@@ -19954,7 +19954,7 @@ async function run() {
 			import_core.setOutput("snapshot-url", snapshotUrl);
 		}
 		if (import_github.context.payload.pull_request) {
-			await createOrUpdateComment(import_github.getOctokit(githubToken), response);
+			await createOrUpdateComment(import_github.getOctokit(githubToken), response, project);
 			import_core.info("PR comment created/updated successfully");
 		} else import_core.warning("Not in a pull request context, skipping comment creation");
 		import_core.info("Action completed successfully!");
@@ -19963,10 +19963,11 @@ async function run() {
 		import_core.setFailed(`Action failed: ${errorMessage}`);
 		if (import_github.context.payload.pull_request) try {
 			const githubToken = import_core.getInput("github-token", { required: true });
+			const project = import_core.getInput("project", { required: true });
 			await createOrUpdateComment(import_github.getOctokit(githubToken), {
 				success: false,
 				message: errorMessage
-			});
+			}, project);
 			import_core.info("Error comment created in PR");
 		} catch (commentError) {
 			import_core.warning(`Failed to create error comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`);

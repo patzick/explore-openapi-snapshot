@@ -68,7 +68,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -81,7 +81,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -97,7 +97,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -121,7 +121,7 @@ describe('GitHub Context Scenarios', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Test in different repo',
-    }));
+    }), 'test-project');
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: 'different-owner',
@@ -143,7 +143,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -158,7 +158,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -174,7 +174,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -199,7 +199,7 @@ describe('GitHub Context Scenarios', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'PR target event test',
-    }));
+    }), 'test-project');
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: 'test-owner',
@@ -220,7 +220,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -235,7 +235,7 @@ describe('GitHub Context Scenarios', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
   });
 
@@ -256,7 +256,7 @@ describe('GitHub Context Scenarios', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, createMockApiResponse());
+    await createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project');
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: undefined,
@@ -284,7 +284,7 @@ describe('GitHub Context Scenarios', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, createMockApiResponse());
+    await createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project');
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: '',

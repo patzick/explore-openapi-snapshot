@@ -64,13 +64,13 @@ describe('createOrUpdateComment', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Success',
-    }));
+    }), 'test-project');
 
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
       owner: 'test-owner',
       repo: 'test-repo',
       issue_number: 123,
-      body: expect.stringContaining('OpenAPI Snapshot Created'),
+      body: expect.stringContaining('OpenAPI Snapshot'),
     });
   });
 
@@ -84,13 +84,13 @@ describe('createOrUpdateComment', () => {
       ],
     });
 
-    await createOrUpdateComment(mockOctokit, createMockApiResponse());
+    await createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project');
 
     expect(mockOctokit.rest.issues.updateComment).toHaveBeenCalledWith({
       owner: 'test-owner',
       repo: 'test-repo',
       comment_id: 456,
-      body: expect.stringContaining('OpenAPI Snapshot Created'),
+      body: expect.stringContaining('OpenAPI Snapshot'),
     });
   });
 
@@ -101,12 +101,12 @@ describe('createOrUpdateComment', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Snapshot created successfully',
-    }));
+    }), 'test-project');
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('✅ Successfully created snapshot!');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/view?projectId=project-456&snapshotId=snapshot-123');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/compare/project-456/from/main/to/123');
+    expect(callArgs.body).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot')
+    expect(callArgs.body).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
     expect(callArgs.body).toContain('Snapshot created successfully');
   });
 
@@ -118,7 +118,7 @@ describe('createOrUpdateComment', () => {
     await createOrUpdateComment(mockOctokit, {
       success: false,
       message: 'API error occurred',
-    });
+    }, 'test-project');
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('❌ Failed to create snapshot');
@@ -133,7 +133,7 @@ describe('createOrUpdateComment', () => {
     };
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('No pull request number found');
 
     // Restore context
@@ -145,12 +145,12 @@ describe('createOrUpdateComment', () => {
       data: [],
     });
 
-    await createOrUpdateComment(mockOctokit, createMockApiResponse());
+    await createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project');
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('✅ Successfully created snapshot!');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/view?projectId=project-456&snapshotId=snapshot-123');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/compare/project-456/from/main/to/123');
+    expect(callArgs.body).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot')
+    expect(callArgs.body).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
     expect(callArgs.body).not.toContain('📝');
   });
 
@@ -161,11 +161,11 @@ describe('createOrUpdateComment', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Snapshot created with warnings',
-    }));
+    }), 'test-project');
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('✅ Successfully created snapshot!');
-    expect(callArgs.body).toContain('https://explore-openapi.dev/view?projectId=project-456&snapshotId=snapshot-123');
+    expect(callArgs.body).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot')
     expect(callArgs.body).toContain('📝 Snapshot created with warnings');
   });
 
@@ -177,7 +177,7 @@ describe('createOrUpdateComment', () => {
     await createOrUpdateComment(mockOctokit, {
       success: false,
       message: '',
-    });
+    }, 'test-project');
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('❌ Failed to create snapshot');
@@ -191,7 +191,7 @@ describe('createOrUpdateComment', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Test message',
-    }));
+    }), 'test-project');
 
     const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
     expect(callArgs.body).toContain('<!-- openapi-snapshot-comment -->');
@@ -211,7 +211,7 @@ describe('createOrUpdateComment', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Updated comment',
-    }));
+    }), 'test-project');
 
     expect(mockOctokit.rest.issues.updateComment).toHaveBeenCalledWith({
       owner: 'test-owner',
@@ -228,7 +228,7 @@ describe('createOrUpdateComment', () => {
     );
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('GitHub API error');
   });
 
@@ -241,7 +241,7 @@ describe('createOrUpdateComment', () => {
     );
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('Failed to create comment');
   });
 
@@ -259,7 +259,7 @@ describe('createOrUpdateComment', () => {
     );
 
     await expect(
-      createOrUpdateComment(mockOctokit, createMockApiResponse())
+      createOrUpdateComment(mockOctokit, createMockApiResponse(), 'test-project')
     ).rejects.toThrow('Failed to update comment');
   });
 });

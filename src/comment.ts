@@ -7,7 +7,8 @@ const COMMENT_IDENTIFIER = '<!-- openapi-snapshot-comment -->';
 
 export async function createOrUpdateComment(
   octokit: GitHub,
-  response: ApiResponse | { success: false; message: string }
+  response: ApiResponse | { success: false; message: string },
+  project: string
 ): Promise<void> {
   const { context } = github;
   const { owner, repo } = context.repo;
@@ -18,7 +19,7 @@ export async function createOrUpdateComment(
   }
 
   // Create comment body
-  const commentBody = formatComment(response);
+  const commentBody = formatComment(response, project);
 
   // Find existing comment
   const { data: comments } = await octokit.rest.issues.listComments({
@@ -50,10 +51,10 @@ export async function createOrUpdateComment(
   }
 }
 
-function formatComment(response: ApiResponse | { success: false; message: string }): string {
+function formatComment(response: ApiResponse | { success: false; message: string }, project: string): string {
   const lines = [
     COMMENT_IDENTIFIER,
-    '## 📸 OpenAPI Snapshot Created',
+    '## 📸 OpenAPI Snapshot',
     '',
   ];
 
@@ -71,20 +72,20 @@ function formatComment(response: ApiResponse | { success: false; message: string
   const apiResponse = response as ApiResponse;
   lines.push('✅ Successfully created snapshot!');
 
-  // Generate snapshot URL
-  if (apiResponse.id && apiResponse.projectId) {
-    lines.push('');
-    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${apiResponse.projectId}&snapshotId=${apiResponse.id}`);
-  }
-
-  // Generate compare URL if in PR context
+  // Generate compare URL if in PR context (first)
   const { context } = github;
   const prNumber = context.payload.pull_request?.number;
   const baseBranch = context.payload.pull_request?.base?.ref;
 
-  if (apiResponse.projectId && prNumber && baseBranch) {
+  if (project && prNumber && baseBranch) {
     lines.push('');
-    lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${apiResponse.projectId}/from/${baseBranch}/to/${prNumber}`);
+    lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+  }
+
+  // Generate snapshot URL (second)
+  if (apiResponse.id && project) {
+    lines.push('');
+    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
   }
 
   // Add any additional message

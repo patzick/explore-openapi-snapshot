@@ -63,7 +63,7 @@ describe('Markdown Formatting in Comments', () => {
   it('should format success comment with proper markdown structure', async () => {
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Snapshot created successfully',
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
 
@@ -71,14 +71,14 @@ describe('Markdown Formatting in Comments', () => {
     expect(commentBody).toMatch(/^<!-- openapi-snapshot-comment -->/);
 
     // Check markdown heading
-    expect(commentBody).toContain('## 📸 OpenAPI Snapshot Created');
+    expect(commentBody).toContain('## 📸 OpenAPI Snapshot');
 
     // Check success emoji and text
     expect(commentBody).toContain('✅ Successfully created snapshot!');
 
     // Check bold markdown for URL labels
-    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=project-test456&snapshotId=snapshot-test123');
-    expect(commentBody).toContain('🔄 **Compare URL:** https://explore-openapi.dev/compare/project-test456/from/main/to/123');
+    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot')
+    expect(commentBody).toContain('🔄 **Compare URL:** https://explore-openapi.dev/compare/test-project/from/main/to/123');
 
     // Check message formatting
     expect(commentBody).toContain('📝 Snapshot created successfully');
@@ -86,7 +86,7 @@ describe('Markdown Formatting in Comments', () => {
     // Verify proper line breaks
     const lines = commentBody.split('\n');
     expect(lines[0]).toBe('<!-- openapi-snapshot-comment -->');
-    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot Created');
+    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot');
     expect(lines[2]).toBe('');
     expect(lines[3]).toBe('✅ Successfully created snapshot!');
   });
@@ -95,7 +95,7 @@ describe('Markdown Formatting in Comments', () => {
     await createOrUpdateComment(mockOctokit, {
       success: false,
       message: 'Authentication failed: Invalid token provided',
-    });
+    }, 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
 
@@ -103,7 +103,7 @@ describe('Markdown Formatting in Comments', () => {
     expect(commentBody).toMatch(/^<!-- openapi-snapshot-comment -->/);
 
     // Check markdown heading
-    expect(commentBody).toContain('## 📸 OpenAPI Snapshot Created');
+    expect(commentBody).toContain('## 📸 OpenAPI Snapshot');
 
     // Check error emoji and text
     expect(commentBody).toContain('❌ Failed to create snapshot');
@@ -114,7 +114,7 @@ describe('Markdown Formatting in Comments', () => {
     // Verify proper line breaks
     const lines = commentBody.split('\n');
     expect(lines[0]).toBe('<!-- openapi-snapshot-comment -->');
-    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot Created');
+    expect(lines[1]).toBe('## 📸 OpenAPI Snapshot');
     expect(lines[2]).toBe('');
     expect(lines[3]).toBe('❌ Failed to create snapshot');
     expect(lines[4]).toBe('');
@@ -125,10 +125,10 @@ describe('Markdown Formatting in Comments', () => {
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       id: 'test-123_abc',
       projectId: 'project-special-chars',
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=project-special-chars&snapshotId=test-123_abc');
+    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot');
   });
 
   it('should handle messages with markdown characters', async () => {
@@ -136,7 +136,7 @@ describe('Markdown Formatting in Comments', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: messageWithMarkdown,
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain(`📝 ${messageWithMarkdown}`);
@@ -147,7 +147,7 @@ describe('Markdown Formatting in Comments', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: multilineMessage,
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain(`📝 ${multilineMessage}`);
@@ -156,13 +156,13 @@ describe('Markdown Formatting in Comments', () => {
   it('should handle empty strings gracefully', async () => {
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       // No message field
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
 
     // Should still have basic structure
     expect(commentBody).toContain('<!-- openapi-snapshot-comment -->');
-    expect(commentBody).toContain('## 📸 OpenAPI Snapshot Created');
+    expect(commentBody).toContain('## 📸 OpenAPI Snapshot');
     expect(commentBody).toContain('✅ Successfully created snapshot!');
 
     // Should contain URLs but not message section
@@ -177,10 +177,10 @@ describe('Markdown Formatting in Comments', () => {
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       id: longId,
       projectId: longProjectId,
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=${longProjectId}&snapshotId=${longId}`);
+    expect(commentBody).toContain('🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot');
   });
 
   it('should handle very long messages without breaking markdown', async () => {
@@ -188,7 +188,7 @@ describe('Markdown Formatting in Comments', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: veryLongMessage,
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain(`📝 ${veryLongMessage}`);
@@ -198,7 +198,7 @@ describe('Markdown Formatting in Comments', () => {
     // Test success comment
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: 'Success message',
-    }));
+    }), 'test-project');
 
     const successBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     const successLines = successBody.split('\n');
@@ -210,7 +210,7 @@ describe('Markdown Formatting in Comments', () => {
     await createOrUpdateComment(mockOctokit, {
       success: false,
       message: 'Error message',
-    });
+    }, 'test-project');
 
     const errorBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     const errorLines = errorBody.split('\n');
@@ -227,7 +227,7 @@ describe('Markdown Formatting in Comments', () => {
     await createOrUpdateComment(mockOctokit, {
       success: false,
       message: errorWithMarkdownChars,
-    });
+    }, 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain(`**Error:** ${errorWithMarkdownChars}`);
@@ -239,7 +239,7 @@ describe('Markdown Formatting in Comments', () => {
     await createOrUpdateComment(mockOctokit, {
       success: false,
       message: messageWithCodeBlock,
-    });
+    }, 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain(`**Error:** ${messageWithCodeBlock}`);
@@ -252,7 +252,7 @@ describe('Markdown Formatting in Comments', () => {
 
     await createOrUpdateComment(mockOctokit, createMockApiResponse({
       message: messageWithHtml,
-    }));
+    }), 'test-project');
 
     const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
     expect(commentBody).toContain(`📝 ${messageWithHtml}`);
