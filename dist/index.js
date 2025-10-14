@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
 
 //#region rolldown:runtime
 var __create$1 = Object.create;
@@ -19833,7 +19833,7 @@ async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName,
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				"Authorization": `Bearer ${authToken}`
+				Authorization: `Bearer ${authToken}`
 			},
 			body: JSON.stringify({
 				schema,

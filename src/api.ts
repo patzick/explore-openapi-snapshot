@@ -1,4 +1,4 @@
-import * as core from '@actions/core';
+import * as core from "@actions/core";
 
 export interface ApiResponse {
   // Actual API response structure
@@ -26,31 +26,31 @@ export async function sendSchemaToApi(
   authToken: string,
   project: string,
   snapshotName: string,
-  permanent: boolean = false
+  permanent: boolean = false,
 ): Promise<ApiResponse> {
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
         schema,
         project,
         name: snapshotName,
-        permanent
+        permanent,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
-        `API request failed with status ${response.status}: ${errorText}`
+        `API request failed with status ${response.status}: ${errorText}`,
       );
     }
 
-    const data = await response.json() as ApiResponse;
+    const data = (await response.json()) as ApiResponse;
     return data;
   } catch (error) {
     if (error instanceof Error) {

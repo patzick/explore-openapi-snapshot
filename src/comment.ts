@@ -1,21 +1,21 @@
-import * as github from '@actions/github';
-import type { ApiResponse } from './api.js';
+import * as github from "@actions/github";
+import type { ApiResponse } from "./api.js";
 
 type GitHub = ReturnType<typeof github.getOctokit>;
 
-const COMMENT_IDENTIFIER = '<!-- openapi-snapshot-comment -->';
+const COMMENT_IDENTIFIER = "<!-- openapi-snapshot-comment -->";
 
 export async function createOrUpdateComment(
   octokit: GitHub,
   response: ApiResponse | { success: false; message: string },
-  project: string
+  project: string,
 ): Promise<void> {
   const { context } = github;
   const { owner, repo } = context.repo;
   const issue_number = context.payload.pull_request?.number;
 
   if (!issue_number || issue_number <= 0) {
-    throw new Error('No pull request number found');
+    throw new Error("No pull request number found");
   }
 
   // Create comment body
@@ -29,7 +29,7 @@ export async function createOrUpdateComment(
   });
 
   const existingComment = comments.find((comment) =>
-    comment.body?.includes(COMMENT_IDENTIFIER)
+    comment.body?.includes(COMMENT_IDENTIFIER),
   );
 
   if (existingComment) {
@@ -51,26 +51,25 @@ export async function createOrUpdateComment(
   }
 }
 
-function formatComment(response: ApiResponse | { success: false; message: string }, project: string): string {
-  const lines = [
-    COMMENT_IDENTIFIER,
-    '## 📸 OpenAPI Snapshot',
-    '',
-  ];
+function formatComment(
+  response: ApiResponse | { success: false; message: string },
+  project: string,
+): string {
+  const lines = [COMMENT_IDENTIFIER, "## 📸 OpenAPI Snapshot", ""];
 
   // Check if this is an error response
-  if ('success' in response && response.success === false) {
-    lines.push('❌ Failed to create snapshot');
+  if ("success" in response && response.success === false) {
+    lines.push("❌ Failed to create snapshot");
     if (response.message) {
-      lines.push('');
+      lines.push("");
       lines.push(`**Error:** ${response.message}`);
     }
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   // Handle successful API response
   const apiResponse = response as ApiResponse;
-  lines.push('✅ Successfully created snapshot!');
+  lines.push("✅ Successfully created snapshot!");
 
   // Generate compare URL if in PR context (first)
   const { context } = github;
@@ -78,21 +77,25 @@ function formatComment(response: ApiResponse | { success: false; message: string
   const baseBranch = context.payload.pull_request?.base?.ref;
 
   if (project && prNumber && baseBranch) {
-    lines.push('');
-    lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+    lines.push("");
+    lines.push(
+      `🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`,
+    );
   }
 
   // Generate snapshot URL (second)
   if (apiResponse.id && project) {
-    lines.push('');
-    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
+    lines.push("");
+    lines.push(
+      `🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`,
+    );
   }
 
   // Add any additional message
   if (apiResponse.message) {
-    lines.push('');
+    lines.push("");
     lines.push(`📝 ${apiResponse.message}`);
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

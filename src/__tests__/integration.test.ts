@@ -1,19 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendSchemaToApi } from '../api.js';
-import { createOrUpdateComment } from '../comment.js';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { sendSchemaToApi } from "../api.js";
+import { createOrUpdateComment } from "../comment.js";
 
 // Mock @actions/github
-vi.mock('@actions/github', () => ({
+vi.mock("@actions/github", () => ({
   context: {
     repo: {
-      owner: 'test-owner',
-      repo: 'test-repo',
+      owner: "test-owner",
+      repo: "test-repo",
     },
     payload: {
       pull_request: {
         number: 123,
         base: {
-          ref: 'main',
+          ref: "main",
         },
       },
     },
@@ -23,9 +23,9 @@ vi.mock('@actions/github', () => ({
 
 // Mock fetch globally
 const fetchMock = vi.fn();
-vi.stubGlobal('fetch', fetchMock);
+vi.stubGlobal("fetch", fetchMock);
 
-describe('Integration Tests - API to PR Comment Flow', () => {
+describe("Integration Tests - API to PR Comment Flow", () => {
   let mockOctokit: any;
 
   beforeEach(() => {
@@ -42,22 +42,22 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     };
   });
 
-  it('should complete full flow: API success -> PR comment creation', async () => {
+  it("should complete full flow: API success -> PR comment creation", async () => {
     // Mock successful API response
     const mockApiResponse = {
-      id: 'snapshot-abc123',
-      projectId: 'project-def456',
-      name: 'test-snapshot',
-      status: 'available',
-      hash: 'hash123',
+      id: "snapshot-abc123",
+      projectId: "project-def456",
+      name: "test-snapshot",
+      status: "available",
+      hash: "hash123",
       size: 1024,
       active: true,
-      createdAt: '2023-01-01T00:00:00Z',
-      modifiedAt: '2023-01-01T00:00:00Z',
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T00:00:00Z",
       description: null,
       expiredAt: null,
       reason: null,
-      message: 'Snapshot created successfully',
+      message: "Snapshot created successfully",
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -72,40 +72,45 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     // Step 1: Send schema to API
     const apiResult = await sendSchemaToApi(
-      'https://api.example.com/snapshot',
-      { openapi: '3.0.0', info: { title: 'Test API', version: '1.0.0' } },
-      'test-token',
-      'test-project',
-      'test-snapshot',
-      false
+      "https://api.example.com/snapshot",
+      { openapi: "3.0.0", info: { title: "Test API", version: "1.0.0" } },
+      "test-token",
+      "test-project",
+      "test-snapshot",
+      false,
     );
 
     expect(apiResult).toEqual(mockApiResponse);
 
     // Step 2: Create PR comment with API result
-    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
+    await createOrUpdateComment(mockOctokit, apiResult, "test-project");
 
     // Verify comment was created with correct content
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
-      owner: 'test-owner',
-      repo: 'test-repo',
+      owner: "test-owner",
+      repo: "test-repo",
       issue_number: 123,
-      body: expect.stringContaining('✅ Successfully created snapshot!'),
+      body: expect.stringContaining("✅ Successfully created snapshot!"),
     });
 
-    const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot')
-    expect(commentBody).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
-    expect(commentBody).toContain('Snapshot created successfully');
-    expect(commentBody).toContain('<!-- openapi-snapshot-comment -->');
+    const commentBody =
+      mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
+    );
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+    );
+    expect(commentBody).toContain("Snapshot created successfully");
+    expect(commentBody).toContain("<!-- openapi-snapshot-comment -->");
   });
 
-  it('should complete full flow: API error -> PR comment with error', async () => {
+  it("should complete full flow: API error -> PR comment with error", async () => {
     // Mock API error response
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 401,
-      text: async () => 'Unauthorized',
+      text: async () => "Unauthorized",
     });
 
     // Mock no existing comments
@@ -116,51 +121,54 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     // Step 1: API call should throw error
     await expect(
       sendSchemaToApi(
-        'https://api.example.com/snapshot',
-        { openapi: '3.0.0' },
-        'invalid-token',
-        'test-project',
-        'test-snapshot',
-        false
-      )
-    ).rejects.toThrow('API request failed with status 401');
+        "https://api.example.com/snapshot",
+        { openapi: "3.0.0" },
+        "invalid-token",
+        "test-project",
+        "test-snapshot",
+        false,
+      ),
+    ).rejects.toThrow("API request failed with status 401");
 
     // Step 2: In a real scenario, the action would catch this error and create a comment
     const errorResponse = {
       success: false as const,
-      message: 'API request failed with status 401: Unauthorized',
+      message: "API request failed with status 401: Unauthorized",
     };
 
-    await createOrUpdateComment(mockOctokit, errorResponse, 'test-project');
+    await createOrUpdateComment(mockOctokit, errorResponse, "test-project");
 
     // Verify error comment was created
     expect(mockOctokit.rest.issues.createComment).toHaveBeenCalledWith({
-      owner: 'test-owner',
-      repo: 'test-repo',
+      owner: "test-owner",
+      repo: "test-repo",
       issue_number: 123,
-      body: expect.stringContaining('❌ Failed to create snapshot'),
+      body: expect.stringContaining("❌ Failed to create snapshot"),
     });
 
-    const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('API request failed with status 401: Unauthorized');
+    const commentBody =
+      mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
+    expect(commentBody).toContain(
+      "API request failed with status 401: Unauthorized",
+    );
   });
 
-  it('should update existing comment on subsequent runs', async () => {
+  it("should update existing comment on subsequent runs", async () => {
     // Mock successful API response
     const mockApiResponse = {
-      id: 'snapshot-def456',
-      projectId: 'project-ghi789',
-      name: 'updated-snapshot',
-      status: 'available',
-      hash: 'hash456',
+      id: "snapshot-def456",
+      projectId: "project-ghi789",
+      name: "updated-snapshot",
+      status: "available",
+      hash: "hash456",
       size: 2048,
       active: true,
-      createdAt: '2023-01-01T00:00:00Z',
-      modifiedAt: '2023-01-01T01:00:00Z',
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T01:00:00Z",
       description: null,
       expiredAt: null,
       reason: null,
-      message: 'Snapshot updated successfully',
+      message: "Snapshot updated successfully",
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -173,42 +181,47 @@ describe('Integration Tests - API to PR Comment Flow', () => {
       data: [
         {
           id: 789,
-          body: '<!-- openapi-snapshot-comment -->\n## 📸 OpenAPI Snapshot Created\n\n✅ Successfully created snapshot!\n\n🔗 **Snapshot URL:** https://explore-openapi.dev/snapshot/abc123',
+          body: "<!-- openapi-snapshot-comment -->\n## 📸 OpenAPI Snapshot Created\n\n✅ Successfully created snapshot!\n\n🔗 **Snapshot URL:** https://explore-openapi.dev/snapshot/abc123",
         },
       ],
     });
 
     // Step 1: Send schema to API
     const apiResult = await sendSchemaToApi(
-      'https://api.example.com/snapshot',
-      { openapi: '3.0.0', info: { title: 'Updated API', version: '1.1.0' } },
-      'test-token',
-      'test-project',
-      'test-snapshot',
-      false
+      "https://api.example.com/snapshot",
+      { openapi: "3.0.0", info: { title: "Updated API", version: "1.1.0" } },
+      "test-token",
+      "test-project",
+      "test-snapshot",
+      false,
     );
 
     // Step 2: Update existing PR comment
-    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
+    await createOrUpdateComment(mockOctokit, apiResult, "test-project");
 
     // Verify comment was updated, not created
     expect(mockOctokit.rest.issues.updateComment).toHaveBeenCalledWith({
-      owner: 'test-owner',
-      repo: 'test-repo',
+      owner: "test-owner",
+      repo: "test-repo",
       comment_id: 789,
-      body: expect.stringContaining('✅ Successfully created snapshot!'),
+      body: expect.stringContaining("✅ Successfully created snapshot!"),
     });
     expect(mockOctokit.rest.issues.createComment).not.toHaveBeenCalled();
 
-    const commentBody = mockOctokit.rest.issues.updateComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=updated-snapshot');
-    expect(commentBody).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
-    expect(commentBody).toContain('Snapshot updated successfully');
+    const commentBody =
+      mockOctokit.rest.issues.updateComment.mock.calls[0][0].body;
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/view?project=test-project&snapshot=updated-snapshot",
+    );
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+    );
+    expect(commentBody).toContain("Snapshot updated successfully");
   });
 
-  it('should handle network errors gracefully in full flow', async () => {
+  it("should handle network errors gracefully in full flow", async () => {
     // Mock network error
-    fetchMock.mockRejectedValueOnce(new Error('Network connection failed'));
+    fetchMock.mockRejectedValueOnce(new Error("Network connection failed"));
 
     // Mock no existing comments
     mockOctokit.rest.issues.listComments.mockResolvedValueOnce({
@@ -218,45 +231,46 @@ describe('Integration Tests - API to PR Comment Flow', () => {
     // Step 1: API call should throw network error
     await expect(
       sendSchemaToApi(
-        'https://api.example.com/snapshot',
-        { openapi: '3.0.0' },
-        'test-token',
-        'test-project',
-        'test-snapshot',
-        false
-      )
-    ).rejects.toThrow('Network connection failed');
+        "https://api.example.com/snapshot",
+        { openapi: "3.0.0" },
+        "test-token",
+        "test-project",
+        "test-snapshot",
+        false,
+      ),
+    ).rejects.toThrow("Network connection failed");
 
     // Step 2: In a real scenario, the action would catch this error and create a comment
     const errorResponse = {
       success: false as const,
-      message: 'Network connection failed',
+      message: "Network connection failed",
     };
 
-    await createOrUpdateComment(mockOctokit, errorResponse, 'test-project');
+    await createOrUpdateComment(mockOctokit, errorResponse, "test-project");
 
     // Verify error comment was created
-    const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('❌ Failed to create snapshot');
-    expect(commentBody).toContain('Network connection failed');
+    const commentBody =
+      mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
+    expect(commentBody).toContain("❌ Failed to create snapshot");
+    expect(commentBody).toContain("Network connection failed");
   });
 
-  it('should handle GitHub API errors during comment creation', async () => {
+  it("should handle GitHub API errors during comment creation", async () => {
     // Mock successful API response
     const mockApiResponse = {
-      id: 'snapshot-ghi789',
-      projectId: 'project-jkl012',
-      name: 'test-snapshot',
-      status: 'available',
-      hash: 'hash789',
+      id: "snapshot-ghi789",
+      projectId: "project-jkl012",
+      name: "test-snapshot",
+      status: "available",
+      hash: "hash789",
       size: 512,
       active: true,
-      createdAt: '2023-01-01T00:00:00Z',
-      modifiedAt: '2023-01-01T00:00:00Z',
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T00:00:00Z",
       description: null,
       expiredAt: null,
       reason: null,
-      message: 'Snapshot created',
+      message: "Snapshot created",
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -266,39 +280,39 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     // Mock GitHub API error when listing comments
     mockOctokit.rest.issues.listComments.mockRejectedValueOnce(
-      new Error('GitHub API rate limit exceeded')
+      new Error("GitHub API rate limit exceeded"),
     );
 
     // Step 1: Send schema to API (should succeed)
     const apiResult = await sendSchemaToApi(
-      'https://api.example.com/snapshot',
-      { openapi: '3.0.0' },
-      'test-token',
-      'test-project',
-      'test-snapshot',
-      false
+      "https://api.example.com/snapshot",
+      { openapi: "3.0.0" },
+      "test-token",
+      "test-project",
+      "test-snapshot",
+      false,
     );
 
     expect(apiResult).toEqual(mockApiResponse);
 
     // Step 2: Comment creation should fail due to GitHub API error
     await expect(
-      createOrUpdateComment(mockOctokit, apiResult, 'test-project')
-    ).rejects.toThrow('GitHub API rate limit exceeded');
+      createOrUpdateComment(mockOctokit, apiResult, "test-project"),
+    ).rejects.toThrow("GitHub API rate limit exceeded");
   });
 
-  it('should handle different API response formats', async () => {
+  it("should handle different API response formats", async () => {
     // Mock API response with minimal data
     const mockApiResponse = {
-      id: 'snapshot-minimal',
-      projectId: 'project-minimal',
-      name: 'minimal-snapshot',
-      status: 'available',
-      hash: 'hashmin',
+      id: "snapshot-minimal",
+      projectId: "project-minimal",
+      name: "minimal-snapshot",
+      status: "available",
+      hash: "hashmin",
       size: 256,
       active: true,
-      createdAt: '2023-01-01T00:00:00Z',
-      modifiedAt: '2023-01-01T00:00:00Z',
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T00:00:00Z",
       description: null,
       expiredAt: null,
       reason: null,
@@ -316,35 +330,40 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     // Complete flow with minimal response
     const apiResult = await sendSchemaToApi(
-      'https://api.example.com/snapshot',
-      { openapi: '3.0.0' },
-      'test-token',
-      'test-project',
-      'test-snapshot',
-      false
+      "https://api.example.com/snapshot",
+      { openapi: "3.0.0" },
+      "test-token",
+      "test-project",
+      "test-snapshot",
+      false,
     );
 
-    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
+    await createOrUpdateComment(mockOctokit, apiResult, "test-project");
 
-    const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('✅ Successfully created snapshot!');
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=minimal-snapshot');
-    expect(commentBody).toContain('https://explore-openapi.dev/compare/test-project/from/main/to/123');
-    expect(commentBody).not.toContain('📝');
+    const commentBody =
+      mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
+    expect(commentBody).toContain("✅ Successfully created snapshot!");
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/view?project=test-project&snapshot=minimal-snapshot",
+    );
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+    );
+    expect(commentBody).not.toContain("📝");
   });
 
-  it('should send permanent flag correctly for branch/tag context', async () => {
+  it("should send permanent flag correctly for branch/tag context", async () => {
     // Mock successful API response for permanent snapshot
     const mockApiResponse = {
-      id: 'snapshot-permanent',
-      projectId: 'project-branch',
-      name: 'branch-snapshot',
-      status: 'available',
-      hash: 'hashperm',
+      id: "snapshot-permanent",
+      projectId: "project-branch",
+      name: "branch-snapshot",
+      status: "available",
+      hash: "hashperm",
       size: 2048,
       active: true,
-      createdAt: '2023-01-01T00:00:00Z',
-      modifiedAt: '2023-01-01T00:00:00Z',
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T00:00:00Z",
       description: null,
       expiredAt: null,
       reason: null,
@@ -361,35 +380,38 @@ describe('Integration Tests - API to PR Comment Flow', () => {
 
     // Test with permanent flag set to true
     const apiResult = await sendSchemaToApi(
-      'https://api.example.com/snapshot',
-      { openapi: '3.0.0' },
-      'test-token',
-      'test-project',
-      'branch-snapshot',
-      true
+      "https://api.example.com/snapshot",
+      { openapi: "3.0.0" },
+      "test-token",
+      "test-project",
+      "branch-snapshot",
+      true,
     );
 
     expect(apiResult).toEqual(mockApiResponse);
 
     // Verify the API was called with permanent: true
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://api.example.com/snapshot',
+      "https://api.example.com/snapshot",
       expect.objectContaining({
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
-          schema: { openapi: '3.0.0' },
-          project: 'test-project',
-          name: 'branch-snapshot',
-          permanent: true
+          schema: { openapi: "3.0.0" },
+          project: "test-project",
+          name: "branch-snapshot",
+          permanent: true,
         }),
-      })
+      }),
     );
 
     // Create PR comment
-    await createOrUpdateComment(mockOctokit, apiResult, 'test-project');
+    await createOrUpdateComment(mockOctokit, apiResult, "test-project");
 
-    const commentBody = mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
-    expect(commentBody).toContain('✅ Successfully created snapshot!');
-    expect(commentBody).toContain('https://explore-openapi.dev/view?project=test-project&snapshot=branch-snapshot');
+    const commentBody =
+      mockOctokit.rest.issues.createComment.mock.calls[0][0].body;
+    expect(commentBody).toContain("✅ Successfully created snapshot!");
+    expect(commentBody).toContain(
+      "https://explore-openapi.dev/view?project=test-project&snapshot=branch-snapshot",
+    );
   });
 });
