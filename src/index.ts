@@ -56,6 +56,9 @@ async function run(): Promise<void> {
 
     core.info(`Sending schema to API: ${apiUrl}`);
 
+    // Get base branch name if in PR context
+    const baseBranchName = github.context.payload.pull_request?.base?.ref;
+
     // Send schema to API
     const response = await sendSchemaToApi({
       apiUrl,
@@ -64,6 +67,7 @@ async function run(): Promise<void> {
       project,
       snapshotName,
       permanent,
+      baseBranchName,
     });
 
     core.info(`API response received: ${JSON.stringify(response)}`);
@@ -101,7 +105,7 @@ async function run(): Promise<void> {
           octokit,
           {
             snapshot: null,
-            sameAsHead: false,
+            sameAsBase: false,
             message: null,
             error: errorMessage,
           },

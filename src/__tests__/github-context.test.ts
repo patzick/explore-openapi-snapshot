@@ -36,7 +36,7 @@ function createMockApiResponse(overrides: Partial<any> = {}) {
       modifiedAt: "2023-01-01T00:00:00Z",
       ...snapshotOverrides,
     },
-    sameAsHead: false,
+    sameAsBase: false,
     message: message || null,
     error: null,
   };

@@ -16,7 +16,7 @@ export const SnapshotSchema = z.object({
 
 export const SnapshotReturnSchema = z.object({
   snapshot: SnapshotSchema.nullable(),
-  sameAsHead: z.boolean(),
+  sameAsBase: z.boolean(),
   message: z.string().optional().nullable(),
   error: z.string().optional().nullable(),
 });

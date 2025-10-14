@@ -58,7 +58,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: "Snapshot created successfully",
       error: null,
     };
@@ -136,7 +136,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     // Step 2: In a real scenario, the action would catch this error and create a comment
     const errorResponse = {
       snapshot: null,
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: "API request failed with status 401: Unauthorized",
     };
@@ -174,7 +174,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T01:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: "Snapshot updated successfully",
       error: null,
     };
@@ -251,7 +251,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     // Step 2: In a real scenario, the action would catch this error and create a comment
     const errorResponse = {
       snapshot: null,
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: "Network connection failed",
     };
@@ -281,7 +281,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: "Snapshot created",
       error: null,
     };
@@ -330,7 +330,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: null,
     };
@@ -384,7 +384,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: null,
     };

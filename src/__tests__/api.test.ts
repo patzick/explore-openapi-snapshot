@@ -25,7 +25,7 @@ describe("sendSchemaToApi", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: null,
     };
@@ -112,7 +112,7 @@ describe("sendSchemaToApi", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: null,
     };
@@ -145,6 +145,61 @@ describe("sendSchemaToApi", () => {
           project: "test-project",
           name: "permanent-snapshot",
           permanent: true,
+        }),
+      }),
+    );
+  });
+
+  it("should send baseBranchName when provided", async () => {
+    const mockResponse = {
+      snapshot: {
+        id: "snapshot-with-base",
+        projectId: "project-456",
+        name: "pr-snapshot",
+        status: "available" as const,
+        hash: "abc123",
+        size: 1024,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsBase: false,
+      message: null,
+      error: null,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const result = await sendSchemaToApi({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: { openapi: "3.0.0" },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "pr-snapshot",
+      permanent: false,
+      baseBranchName: "main",
+    });
+
+    expect(result).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer test-token",
+        },
+        body: JSON.stringify({
+          schema: { openapi: "3.0.0" },
+          project: "test-project",
+          name: "pr-snapshot",
+          permanent: false,
+          baseBranchName: "main",
         }),
       }),
     );

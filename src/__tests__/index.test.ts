@@ -56,7 +56,7 @@ describe("Main Action Logic", () => {
         createdAt: "2023-01-01T00:00:00Z",
         modifiedAt: "2023-01-01T00:00:00Z",
       },
-      sameAsHead: false,
+      sameAsBase: false,
       message: null,
       error: null,
     });
@@ -103,6 +103,7 @@ describe("Main Action Logic", () => {
       project: "test-project",
       snapshotName: "123",
       permanent: false, // permanent should be false for PR
+      baseBranchName: "main",
     });
   });
 
@@ -129,6 +130,7 @@ describe("Main Action Logic", () => {
       project: "test-project",
       snapshotName: "main",
       permanent: true, // permanent should be true for branch push
+      baseBranchName: undefined,
     });
   });
 
@@ -155,6 +157,7 @@ describe("Main Action Logic", () => {
       project: "test-project",
       snapshotName: "v1.0.0",
       permanent: true, // permanent should be true for tag push
+      baseBranchName: undefined,
     });
   });
 
@@ -195,6 +198,7 @@ describe("Main Action Logic", () => {
       project: "test-project",
       snapshotName: "123",
       permanent: true, // permanent should be true due to explicit override
+      baseBranchName: "main",
     });
   });
 
@@ -232,6 +236,7 @@ describe("Main Action Logic", () => {
       project: "test-project",
       snapshotName: "feature-branch",
       permanent: false, // permanent should be false due to explicit override
+      baseBranchName: undefined,
     });
   });
 });

@@ -19828,7 +19828,7 @@ var require_github = /* @__PURE__ */ __commonJS({ "node_modules/.pnpm/@actions+g
 var import_github$1 = /* @__PURE__ */ __toESM$1(require_github(), 1);
 var import_core$1 = /* @__PURE__ */ __toESM$1(require_core(), 1);
 async function sendSchemaToApi(params) {
-	const { apiUrl, schema, authToken, project, snapshotName, permanent = false } = params;
+	const { apiUrl, schema, authToken, project, snapshotName, permanent = false, baseBranchName } = params;
 	try {
 		const response = await fetch(apiUrl, {
 			method: "POST",
@@ -19840,7 +19840,8 @@ async function sendSchemaToApi(params) {
 				schema,
 				project,
 				name: snapshotName,
-				permanent
+				permanent,
+				...baseBranchName && { baseBranchName }
 			})
 		});
 		if (!response.ok) {
@@ -19947,13 +19948,15 @@ async function run() {
 		const schemaContent = await readFile(schemaFile, "utf-8");
 		const schema = JSON.parse(schemaContent);
 		import_core.info(`Sending schema to API: ${apiUrl}`);
+		const baseBranchName = import_github.context.payload.pull_request.base.ref;
 		const response = await sendSchemaToApi({
 			apiUrl,
 			schema,
 			authToken,
 			project,
 			snapshotName,
-			permanent
+			permanent,
+			baseBranchName
 		});
 		import_core.info(`API response received: ${JSON.stringify(response)}`);
 		import_core.setOutput("response", JSON.stringify(response));
@@ -19974,7 +19977,7 @@ async function run() {
 			const project = import_core.getInput("project", { required: true });
 			await createOrUpdateComment(import_github.getOctokit(githubToken), {
 				snapshot: null,
-				sameAsHead: false,
+				sameAsBase: false,
 				message: null,
 				error: errorMessage
 			}, project);

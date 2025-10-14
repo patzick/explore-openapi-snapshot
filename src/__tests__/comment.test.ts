@@ -39,7 +39,7 @@ function createMockApiResponse(overrides: Partial<any> = {}) {
       modifiedAt: "2023-01-01T00:00:00Z",
       ...snapshotOverrides,
     },
-    sameAsHead: false,
+    sameAsBase: false,
     message: message || null,
     error: null,
   };
@@ -140,7 +140,7 @@ describe("createOrUpdateComment", () => {
       mockOctokit,
       {
         snapshot: null,
-        sameAsHead: false,
+        sameAsBase: false,
         message: null,
         error: "API error occurred",
       },
@@ -223,7 +223,7 @@ describe("createOrUpdateComment", () => {
       mockOctokit,
       {
         snapshot: null,
-        sameAsHead: false,
+        sameAsBase: false,
         message: null,
         error: "",
       },
