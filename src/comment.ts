@@ -72,13 +72,7 @@ function formatComment(response: ApiResponse | { success: false; message: string
   const apiResponse = response as ApiResponse;
   lines.push('✅ Successfully created snapshot!');
 
-  // Generate snapshot URL
-  if (apiResponse.id && project) {
-    lines.push('');
-    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
-  }
-
-  // Generate compare URL if in PR context
+  // Generate compare URL if in PR context (first)
   const { context } = github;
   const prNumber = context.payload.pull_request?.number;
   const baseBranch = context.payload.pull_request?.base?.ref;
@@ -86,6 +80,12 @@ function formatComment(response: ApiResponse | { success: false; message: string
   if (project && prNumber && baseBranch) {
     lines.push('');
     lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+  }
+
+  // Generate snapshot URL (second)
+  if (apiResponse.id && project) {
+    lines.push('');
+    lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
   }
 
   // Add any additional message

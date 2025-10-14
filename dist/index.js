@@ -19897,16 +19897,16 @@ function formatComment(response, project) {
 	}
 	const apiResponse = response;
 	lines.push("✅ Successfully created snapshot!");
-	if (apiResponse.id && project) {
-		lines.push("");
-		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
-	}
 	const { context } = import_github$1;
 	const prNumber = context.payload.pull_request?.number;
 	const baseBranch = context.payload.pull_request?.base?.ref;
 	if (project && prNumber && baseBranch) {
 		lines.push("");
 		lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+	}
+	if (apiResponse.id && project) {
+		lines.push("");
+		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
 	}
 	if (apiResponse.message) {
 		lines.push("");
