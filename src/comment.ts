@@ -1,5 +1,5 @@
 import * as github from "@actions/github";
-import type { ApiResponse } from "./api.js";
+import type { SnapshotReturn } from "./types";
 
 type GitHub = ReturnType<typeof github.getOctokit>;
 
@@ -7,7 +7,7 @@ const COMMENT_IDENTIFIER = "<!-- openapi-snapshot-comment -->";
 
 export async function createOrUpdateComment(
   octokit: GitHub,
-  response: ApiResponse | { success: false; message: string },
+  response: SnapshotReturn,
   project: string,
 ): Promise<void> {
   const { context } = github;
@@ -52,23 +52,23 @@ export async function createOrUpdateComment(
 }
 
 function formatComment(
-  response: ApiResponse | { success: false; message: string },
+  response: SnapshotReturn,
   project: string,
 ): string {
   const lines = [COMMENT_IDENTIFIER, "## 📸 OpenAPI Snapshot", ""];
 
   // Check if this is an error response
-  if ("success" in response && response.success === false) {
+  if (!response.snapshot) {
     lines.push("❌ Failed to create snapshot");
-    if (response.message) {
+    if (response.error) {
       lines.push("");
-      lines.push(`**Error:** ${response.message}`);
+      lines.push(`**Error:** ${response.error}`);
     }
     return lines.join("\n");
   }
 
   // Handle successful API response
-  const apiResponse = response as ApiResponse;
+  const apiResponse = response;
   lines.push("✅ Successfully created snapshot!");
 
   // Generate compare URL if in PR context (first)
@@ -84,10 +84,10 @@ function formatComment(
   }
 
   // Generate snapshot URL (second)
-  if (apiResponse.id && project) {
+  if (apiResponse.snapshot?.id && project) {
     lines.push("");
     lines.push(
-      `🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`,
+      `🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.snapshot.name}`,
     );
   }
 

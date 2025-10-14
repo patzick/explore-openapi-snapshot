@@ -23,20 +23,25 @@ vi.mock("@actions/github", () => ({
 
 // Helper function to create mock API responses
 function createMockApiResponse(overrides: Partial<any> = {}) {
+  const { message, ...snapshotOverrides } = overrides;
   return {
-    id: "snapshot-123",
-    projectId: "project-456",
-    name: "test-snapshot",
-    status: "available",
-    hash: "abc123",
-    size: 1024,
-    active: true,
-    createdAt: "2023-01-01T00:00:00Z",
-    modifiedAt: "2023-01-01T00:00:00Z",
-    description: null,
-    expiredAt: null,
-    reason: null,
-    ...overrides,
+    snapshot: {
+      id: "snapshot-123",
+      projectId: "project-456",
+      name: "test-snapshot",
+      status: "available" as const,
+      hash: "abc123",
+      size: 1024,
+      description: null,
+      expiredAt: null,
+      reason: null,
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T00:00:00Z",
+      ...snapshotOverrides,
+    },
+    sameAsHead: false,
+    message: message || null,
+    error: null,
   };
 }
 
@@ -134,8 +139,10 @@ describe("createOrUpdateComment", () => {
     await createOrUpdateComment(
       mockOctokit,
       {
-        success: false,
-        message: "API error occurred",
+        snapshot: null,
+        sameAsHead: false,
+        message: null,
+        error: "API error occurred",
       },
       "test-project",
     );
@@ -215,8 +222,10 @@ describe("createOrUpdateComment", () => {
     await createOrUpdateComment(
       mockOctokit,
       {
-        success: false,
-        message: "",
+        snapshot: null,
+        sameAsHead: false,
+        message: null,
+        error: "",
       },
       "test-project",
     );

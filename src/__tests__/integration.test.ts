@@ -45,19 +45,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
   it("should complete full flow: API success -> PR comment creation", async () => {
     // Mock successful API response
     const mockApiResponse = {
-      id: "snapshot-abc123",
-      projectId: "project-def456",
-      name: "test-snapshot",
-      status: "available",
-      hash: "hash123",
-      size: 1024,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-abc123",
+        projectId: "project-def456",
+        name: "test-snapshot",
+        status: "available" as const,
+        hash: "hash123",
+        size: 1024,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
       message: "Snapshot created successfully",
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -71,14 +74,14 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     });
 
     // Step 1: Send schema to API
-    const apiResult = await sendSchemaToApi(
-      "https://api.example.com/snapshot",
-      { openapi: "3.0.0", info: { title: "Test API", version: "1.0.0" } },
-      "test-token",
-      "test-project",
-      "test-snapshot",
-      false,
-    );
+    const apiResult = await sendSchemaToApi({
+      apiUrl: "https://api.example.com/snapshot",
+      schema: { openapi: "3.0.0", info: { title: "Test API", version: "1.0.0" } },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "test-snapshot",
+      permanent: false,
+    });
 
     expect(apiResult).toEqual(mockApiResponse);
 
@@ -120,20 +123,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
 
     // Step 1: API call should throw error
     await expect(
-      sendSchemaToApi(
-        "https://api.example.com/snapshot",
-        { openapi: "3.0.0" },
-        "invalid-token",
-        "test-project",
-        "test-snapshot",
-        false,
-      ),
+      sendSchemaToApi({
+        apiUrl: "https://api.example.com/snapshot",
+        schema: { openapi: "3.0.0" },
+        authToken: "invalid-token",
+        project: "test-project",
+        snapshotName: "test-snapshot",
+        permanent: false,
+      }),
     ).rejects.toThrow("API request failed with status 401");
 
     // Step 2: In a real scenario, the action would catch this error and create a comment
     const errorResponse = {
-      success: false as const,
-      message: "API request failed with status 401: Unauthorized",
+      snapshot: null,
+      sameAsHead: false,
+      message: null,
+      error: "API request failed with status 401: Unauthorized",
     };
 
     await createOrUpdateComment(mockOctokit, errorResponse, "test-project");
@@ -156,19 +161,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
   it("should update existing comment on subsequent runs", async () => {
     // Mock successful API response
     const mockApiResponse = {
-      id: "snapshot-def456",
-      projectId: "project-ghi789",
-      name: "updated-snapshot",
-      status: "available",
-      hash: "hash456",
-      size: 2048,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T01:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-def456",
+        projectId: "project-ghi789",
+        name: "updated-snapshot",
+        status: "available" as const,
+        hash: "hash456",
+        size: 2048,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T01:00:00Z",
+      },
+      sameAsHead: false,
       message: "Snapshot updated successfully",
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -187,14 +195,14 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     });
 
     // Step 1: Send schema to API
-    const apiResult = await sendSchemaToApi(
-      "https://api.example.com/snapshot",
-      { openapi: "3.0.0", info: { title: "Updated API", version: "1.1.0" } },
-      "test-token",
-      "test-project",
-      "test-snapshot",
-      false,
-    );
+    const apiResult = await sendSchemaToApi({
+      apiUrl: "https://api.example.com/snapshot",
+      schema: { openapi: "3.0.0", info: { title: "Updated API", version: "1.1.0" } },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "test-snapshot",
+      permanent: false,
+    });
 
     // Step 2: Update existing PR comment
     await createOrUpdateComment(mockOctokit, apiResult, "test-project");
@@ -230,20 +238,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
 
     // Step 1: API call should throw network error
     await expect(
-      sendSchemaToApi(
-        "https://api.example.com/snapshot",
-        { openapi: "3.0.0" },
-        "test-token",
-        "test-project",
-        "test-snapshot",
-        false,
-      ),
+      sendSchemaToApi({
+        apiUrl: "https://api.example.com/snapshot",
+        schema: { openapi: "3.0.0" },
+        authToken: "test-token",
+        project: "test-project",
+        snapshotName: "test-snapshot",
+        permanent: false,
+      }),
     ).rejects.toThrow("Network connection failed");
 
     // Step 2: In a real scenario, the action would catch this error and create a comment
     const errorResponse = {
-      success: false as const,
-      message: "Network connection failed",
+      snapshot: null,
+      sameAsHead: false,
+      message: null,
+      error: "Network connection failed",
     };
 
     await createOrUpdateComment(mockOctokit, errorResponse, "test-project");
@@ -258,19 +268,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
   it("should handle GitHub API errors during comment creation", async () => {
     // Mock successful API response
     const mockApiResponse = {
-      id: "snapshot-ghi789",
-      projectId: "project-jkl012",
-      name: "test-snapshot",
-      status: "available",
-      hash: "hash789",
-      size: 512,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-ghi789",
+        projectId: "project-jkl012",
+        name: "test-snapshot",
+        status: "available" as const,
+        hash: "hash789",
+        size: 512,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
       message: "Snapshot created",
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -284,14 +297,14 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     );
 
     // Step 1: Send schema to API (should succeed)
-    const apiResult = await sendSchemaToApi(
-      "https://api.example.com/snapshot",
-      { openapi: "3.0.0" },
-      "test-token",
-      "test-project",
-      "test-snapshot",
-      false,
-    );
+    const apiResult = await sendSchemaToApi({
+      apiUrl: "https://api.example.com/snapshot",
+      schema: { openapi: "3.0.0" },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "test-snapshot",
+      permanent: false,
+    });
 
     expect(apiResult).toEqual(mockApiResponse);
 
@@ -304,19 +317,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
   it("should handle different API response formats", async () => {
     // Mock API response with minimal data
     const mockApiResponse = {
-      id: "snapshot-minimal",
-      projectId: "project-minimal",
-      name: "minimal-snapshot",
-      status: "available",
-      hash: "hashmin",
-      size: 256,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
-      // No message field
+      snapshot: {
+        id: "snapshot-minimal",
+        projectId: "project-minimal",
+        name: "minimal-snapshot",
+        status: "available" as const,
+        hash: "hashmin",
+        size: 256,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
+      message: null,
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -329,14 +345,14 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     });
 
     // Complete flow with minimal response
-    const apiResult = await sendSchemaToApi(
-      "https://api.example.com/snapshot",
-      { openapi: "3.0.0" },
-      "test-token",
-      "test-project",
-      "test-snapshot",
-      false,
-    );
+    const apiResult = await sendSchemaToApi({
+      apiUrl: "https://api.example.com/snapshot",
+      schema: { openapi: "3.0.0" },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "test-snapshot",
+      permanent: false,
+    });
 
     await createOrUpdateComment(mockOctokit, apiResult, "test-project");
 
@@ -355,18 +371,22 @@ describe("Integration Tests - API to PR Comment Flow", () => {
   it("should send permanent flag correctly for branch/tag context", async () => {
     // Mock successful API response for permanent snapshot
     const mockApiResponse = {
-      id: "snapshot-permanent",
-      projectId: "project-branch",
-      name: "branch-snapshot",
-      status: "available",
-      hash: "hashperm",
-      size: 2048,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-permanent",
+        projectId: "project-branch",
+        name: "branch-snapshot",
+        status: "available" as const,
+        hash: "hashperm",
+        size: 2048,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
+      message: null,
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -379,14 +399,14 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     });
 
     // Test with permanent flag set to true
-    const apiResult = await sendSchemaToApi(
-      "https://api.example.com/snapshot",
-      { openapi: "3.0.0" },
-      "test-token",
-      "test-project",
-      "branch-snapshot",
-      true,
-    );
+    const apiResult = await sendSchemaToApi({
+      apiUrl: "https://api.example.com/snapshot",
+      schema: { openapi: "3.0.0" },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "branch-snapshot",
+      permanent: true,
+    });
 
     expect(apiResult).toEqual(mockApiResponse);
 

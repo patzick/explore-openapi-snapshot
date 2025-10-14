@@ -57,22 +57,22 @@ async function run(): Promise<void> {
     core.info(`Sending schema to API: ${apiUrl}`);
 
     // Send schema to API
-    const response = await sendSchemaToApi(
+    const response = await sendSchemaToApi({
       apiUrl,
       schema,
       authToken,
       project,
       snapshotName,
       permanent,
-    );
+    });
 
     core.info(`API response received: ${JSON.stringify(response)}`);
 
     // Set outputs
     core.setOutput("response", JSON.stringify(response));
-    if (response.id && response.projectId) {
+    if (response.snapshot?.id && project) {
       // Generate snapshot URL from response data
-      const snapshotUrl = `https://explore-openapi.dev/view?projectId=${response.projectId}&snapshotId=${response.id}`;
+      const snapshotUrl = `https://explore-openapi.dev/view?project=${project}&snapshot=${response.snapshot.name}`;
       core.setOutput("snapshot-url", snapshotUrl);
     }
 
@@ -100,8 +100,10 @@ async function run(): Promise<void> {
         await createOrUpdateComment(
           octokit,
           {
-            success: false,
-            message: errorMessage,
+            snapshot: null,
+            sameAsHead: false,
+            message: null,
+            error: errorMessage,
           },
           project,
         );

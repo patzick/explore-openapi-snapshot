@@ -12,18 +12,22 @@ describe("sendSchemaToApi", () => {
 
   it("should send schema to API successfully", async () => {
     const mockResponse = {
-      id: "snapshot-123",
-      projectId: "project-456",
-      name: "test-snapshot",
-      status: "available",
-      hash: "abc123",
-      size: 1024,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-123",
+        projectId: "project-456",
+        name: "test-snapshot",
+        status: "available" as const,
+        hash: "abc123",
+        size: 1024,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
+      message: null,
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -31,14 +35,14 @@ describe("sendSchemaToApi", () => {
       json: async () => mockResponse,
     });
 
-    const result = await sendSchemaToApi(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      { openapi: "3.0.0" },
-      "test-token",
-      "test-project",
-      "test-snapshot",
-      false,
-    );
+    const result = await sendSchemaToApi({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: { openapi: "3.0.0" },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "test-snapshot",
+      permanent: false,
+    });
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith(
@@ -67,14 +71,14 @@ describe("sendSchemaToApi", () => {
     });
 
     await expect(
-      sendSchemaToApi(
-        "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-        { openapi: "3.0.0" },
-        "invalid-token",
-        "test-project",
-        "test-snapshot",
-        false,
-      ),
+      sendSchemaToApi({
+        apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+        schema: { openapi: "3.0.0" },
+        authToken: "invalid-token",
+        project: "test-project",
+        snapshotName: "test-snapshot",
+        permanent: false,
+      }),
     ).rejects.toThrow("API request failed with status 401");
   });
 
@@ -82,31 +86,35 @@ describe("sendSchemaToApi", () => {
     fetchMock.mockRejectedValueOnce(new Error("Network error"));
 
     await expect(
-      sendSchemaToApi(
-        "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-        { openapi: "3.0.0" },
-        "test-token",
-        "test-project",
-        "test-snapshot",
-        false,
-      ),
+      sendSchemaToApi({
+        apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+        schema: { openapi: "3.0.0" },
+        authToken: "test-token",
+        project: "test-project",
+        snapshotName: "test-snapshot",
+        permanent: false,
+      }),
     ).rejects.toThrow("Network error");
   });
 
   it("should send permanent flag when set to true", async () => {
     const mockResponse = {
-      id: "snapshot-permanent",
-      projectId: "project-456",
-      name: "permanent-snapshot",
-      status: "available",
-      hash: "abc123",
-      size: 1024,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-permanent",
+        projectId: "project-456",
+        name: "permanent-snapshot",
+        status: "available" as const,
+        hash: "abc123",
+        size: 1024,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
+      message: null,
+      error: null,
     };
 
     fetchMock.mockResolvedValueOnce({
@@ -114,14 +122,14 @@ describe("sendSchemaToApi", () => {
       json: async () => mockResponse,
     });
 
-    const result = await sendSchemaToApi(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      { openapi: "3.0.0" },
-      "test-token",
-      "test-project",
-      "permanent-snapshot",
-      true,
-    );
+    const result = await sendSchemaToApi({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: { openapi: "3.0.0" },
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "permanent-snapshot",
+      permanent: true,
+    });
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith(

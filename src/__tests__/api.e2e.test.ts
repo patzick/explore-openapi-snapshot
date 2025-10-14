@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { sendSchemaToApi } from "../api.js";
+import z from "zod";
+import { SnapshotReturnSchema } from "../types.js";
 
 // Load environment variables from .env file
 function loadEnvFile() {
@@ -79,47 +81,21 @@ describe("E2E Tests", () => {
   };
 
   it("should successfully send schema to API and receive valid response", async () => {
-    const response = await sendSchemaToApi(
-      envVars.API_URL,
-      testSchema,
-      envVars.API_AUTH_TOKEN,
-      envVars.TEST_PROJECT,
-      envVars.TEST_SNAPSHOT_NAME,
-    );
+    const response = await sendSchemaToApi({
+      apiUrl: envVars.API_URL,
+      schema: testSchema,
+      authToken: envVars.API_AUTH_TOKEN,
+      project: envVars.TEST_PROJECT,
+      snapshotName: envVars.TEST_SNAPSHOT_NAME,
+      permanent: true,
+    });
 
     // Verify response has expected structure (without snapshotting dynamic values)
-    expect(response).toHaveProperty("id");
-    expect(response).toHaveProperty("name");
-    expect(response).toHaveProperty("projectId");
-    expect(response).toHaveProperty("status");
-    expect(response).toHaveProperty("hash");
-    expect(response).toHaveProperty("createdAt");
+    const safeParse = SnapshotReturnSchema.safeParse(response);
+    if (!safeParse.success) {
+      console.error("Invalid response:", z.prettifyError(safeParse.error));
+    }
+    expect(safeParse.success).toBe(true);
 
-    expect(typeof response.id).toBe("string");
-    expect(typeof response.name).toBe("string");
-    expect(typeof response.projectId).toBe("string");
-    expect(typeof response.status).toBe("string");
-    expect(typeof response.hash).toBe("string");
-    expect(typeof response.createdAt).toBe("string");
-
-    // Verify specific expected values
-    expect(response.name).toBe(envVars.TEST_SNAPSHOT_NAME);
-    expect(response.status).toBe("available");
-    // Note: projectId might be different from TEST_PROJECT if TEST_PROJECT is a name, not ID
-    expect(typeof response.projectId).toBe("string");
-    expect(response.projectId).toMatch(/^[0-9a-f-]+$/); // UUID format
-
-    // Snapshot only the structure (with dynamic values normalized)
-    const normalizedResponse = {
-      ...response,
-      id: "[UUID]",
-      projectId: "[PROJECT_ID]",
-      createdAt: "[TIMESTAMP]",
-      modifiedAt: "[TIMESTAMP]",
-    };
-    expect(normalizedResponse).toMatchSnapshot("api-response-structure.json");
-
-    // Log response for debugging
-    console.log("API Response:", JSON.stringify(response, null, 2));
   }, 30000); // 30 second timeout for API call
 });

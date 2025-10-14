@@ -19827,7 +19827,8 @@ var require_github = /* @__PURE__ */ __commonJS({ "node_modules/.pnpm/@actions+g
 //#region src/api.ts
 var import_github$1 = /* @__PURE__ */ __toESM$1(require_github(), 1);
 var import_core$1 = /* @__PURE__ */ __toESM$1(require_core(), 1);
-async function sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName, permanent = false) {
+async function sendSchemaToApi(params) {
+	const { apiUrl, schema, authToken, project, snapshotName, permanent = false } = params;
 	try {
 		const response = await fetch(apiUrl, {
 			method: "POST",
@@ -19887,11 +19888,11 @@ function formatComment(response, project) {
 		"## 📸 OpenAPI Snapshot",
 		""
 	];
-	if ("success" in response && response.success === false) {
+	if (!response.snapshot) {
 		lines.push("❌ Failed to create snapshot");
-		if (response.message) {
+		if (response.error) {
 			lines.push("");
-			lines.push(`**Error:** ${response.message}`);
+			lines.push(`**Error:** ${response.error}`);
 		}
 		return lines.join("\n");
 	}
@@ -19904,9 +19905,9 @@ function formatComment(response, project) {
 		lines.push("");
 		lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
 	}
-	if (apiResponse.id && project) {
+	if (apiResponse.snapshot?.id && project) {
 		lines.push("");
-		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.name}`);
+		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.snapshot.name}`);
 	}
 	if (apiResponse.message) {
 		lines.push("");
@@ -19946,11 +19947,18 @@ async function run() {
 		const schemaContent = await readFile(schemaFile, "utf-8");
 		const schema = JSON.parse(schemaContent);
 		import_core.info(`Sending schema to API: ${apiUrl}`);
-		const response = await sendSchemaToApi(apiUrl, schema, authToken, project, snapshotName, permanent);
+		const response = await sendSchemaToApi({
+			apiUrl,
+			schema,
+			authToken,
+			project,
+			snapshotName,
+			permanent
+		});
 		import_core.info(`API response received: ${JSON.stringify(response)}`);
 		import_core.setOutput("response", JSON.stringify(response));
-		if (response.id && response.projectId) {
-			const snapshotUrl = `https://explore-openapi.dev/view?projectId=${response.projectId}&snapshotId=${response.id}`;
+		if (response.snapshot?.id && project) {
+			const snapshotUrl = `https://explore-openapi.dev/view?project=${project}&snapshot=${response.snapshot.name}`;
 			import_core.setOutput("snapshot-url", snapshotUrl);
 		}
 		if (import_github.context.payload.pull_request) {
@@ -19965,8 +19973,10 @@ async function run() {
 			const githubToken = import_core.getInput("github-token", { required: true });
 			const project = import_core.getInput("project", { required: true });
 			await createOrUpdateComment(import_github.getOctokit(githubToken), {
-				success: false,
-				message: errorMessage
+				snapshot: null,
+				sameAsHead: false,
+				message: null,
+				error: errorMessage
 			}, project);
 			import_core.info("Error comment created in PR");
 		} catch (commentError) {

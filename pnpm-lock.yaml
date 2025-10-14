@@ -33,6 +33,9 @@ importers:
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.7.2)
+      zod:
+        specifier: 4.1.12
+        version: 4.1.12
 
 packages:
 
@@ -996,6 +999,9 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
+
 snapshots:
 
   '@actions/core@1.11.1':
@@ -1808,3 +1814,5 @@ snapshots:
       stackback: 0.0.2
 
   wrappy@1.0.2: {}
+
+  zod@4.1.12: {}

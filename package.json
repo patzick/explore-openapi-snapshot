@@ -31,7 +31,8 @@
     "oxlint": "1.23.0",
     "tsdown": "0.15.7",
     "typescript": "5.9.3",
-    "vitest": "3.2.4"
+    "vitest": "3.2.4",
+    "zod": "4.1.12"
   },
   "engines": {
     "node": ">=20"

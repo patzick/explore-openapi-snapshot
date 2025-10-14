@@ -22,20 +22,25 @@ vi.mock("@actions/github", () => ({
 
 // Helper function to create mock API responses
 function createMockApiResponse(overrides: Partial<any> = {}) {
+  const { message, ...snapshotOverrides } = overrides;
   return {
-    id: "snapshot-test123",
-    projectId: "project-test456",
-    name: "test-snapshot",
-    status: "available",
-    hash: "abc123",
-    size: 1024,
-    active: true,
-    createdAt: "2023-01-01T00:00:00Z",
-    modifiedAt: "2023-01-01T00:00:00Z",
-    description: null,
-    expiredAt: null,
-    reason: null,
-    ...overrides,
+    snapshot: {
+      id: "snapshot-test123",
+      projectId: "project-test456",
+      name: "test-snapshot",
+      status: "available" as const,
+      hash: "abc123",
+      size: 1024,
+      description: null,
+      expiredAt: null,
+      reason: null,
+      createdAt: "2023-01-01T00:00:00Z",
+      modifiedAt: "2023-01-01T00:00:00Z",
+      ...snapshotOverrides,
+    },
+    sameAsHead: false,
+    message: message || null,
+    error: null,
   };
 }
 
@@ -104,8 +109,10 @@ describe("Markdown Formatting in Comments", () => {
     await createOrUpdateComment(
       mockOctokit,
       {
-        success: false,
-        message: "Authentication failed: Invalid token provided",
+        snapshot: null,
+        sameAsHead: false,
+        message: null,
+        error: "Authentication failed: Invalid token provided",
       },
       "test-project",
     );
@@ -270,8 +277,10 @@ describe("Markdown Formatting in Comments", () => {
     await createOrUpdateComment(
       mockOctokit,
       {
-        success: false,
-        message: "Error message",
+        snapshot: null,
+        sameAsHead: false,
+        message: null,
+        error: "Error message",
       },
       "test-project",
     );
@@ -293,8 +302,10 @@ describe("Markdown Formatting in Comments", () => {
     await createOrUpdateComment(
       mockOctokit,
       {
-        success: false,
-        message: errorWithMarkdownChars,
+        snapshot: null,
+        sameAsHead: false,
+        message: null,
+        error: errorWithMarkdownChars,
       },
       "test-project",
     );
@@ -311,8 +322,10 @@ describe("Markdown Formatting in Comments", () => {
     await createOrUpdateComment(
       mockOctokit,
       {
-        success: false,
-        message: messageWithCodeBlock,
+        snapshot: null,
+        sameAsHead: false,
+        message: null,
+        error: messageWithCodeBlock,
       },
       "test-project",
     );

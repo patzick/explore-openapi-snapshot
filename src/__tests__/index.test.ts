@@ -43,18 +43,22 @@ describe("Main Action Logic", () => {
     mockCore.warning = vi.fn();
 
     mockSendSchemaToApi.mockResolvedValue({
-      id: "snapshot-123",
-      projectId: "project-456",
-      name: "test-snapshot",
-      status: "available",
-      hash: "abc123",
-      size: 1024,
-      active: true,
-      createdAt: "2023-01-01T00:00:00Z",
-      modifiedAt: "2023-01-01T00:00:00Z",
-      description: null,
-      expiredAt: null,
-      reason: null,
+      snapshot: {
+        id: "snapshot-123",
+        projectId: "project-456",
+        name: "test-snapshot",
+        status: "available" as const,
+        hash: "abc123",
+        size: 1024,
+        description: null,
+        expiredAt: null,
+        reason: null,
+        createdAt: "2023-01-01T00:00:00Z",
+        modifiedAt: "2023-01-01T00:00:00Z",
+      },
+      sameAsHead: false,
+      message: null,
+      error: null,
     });
 
     mockCreateOrUpdateComment.mockResolvedValue(undefined);
@@ -92,14 +96,14 @@ describe("Main Action Logic", () => {
     // Wait for async operations
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mockSendSchemaToApi).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      expect.any(Object),
-      "test-token",
-      "test-project",
-      "123",
-      false, // permanent should be false for PR
-    );
+    expect(mockSendSchemaToApi).toHaveBeenCalledWith({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: expect.any(Object),
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "123",
+      permanent: false, // permanent should be false for PR
+    });
   });
 
   it("should set permanent to true for branch push context", async () => {
@@ -118,14 +122,14 @@ describe("Main Action Logic", () => {
     // Wait for async operations
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mockSendSchemaToApi).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      expect.any(Object),
-      "test-token",
-      "test-project",
-      "main",
-      true, // permanent should be true for branch push
-    );
+    expect(mockSendSchemaToApi).toHaveBeenCalledWith({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: expect.any(Object),
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "main",
+      permanent: true, // permanent should be true for branch push
+    });
   });
 
   it("should set permanent to true for tag push context", async () => {
@@ -144,14 +148,14 @@ describe("Main Action Logic", () => {
     // Wait for async operations
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mockSendSchemaToApi).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      expect.any(Object),
-      "test-token",
-      "test-project",
-      "v1.0.0",
-      true, // permanent should be true for tag push
-    );
+    expect(mockSendSchemaToApi).toHaveBeenCalledWith({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: expect.any(Object),
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "v1.0.0",
+      permanent: true, // permanent should be true for tag push
+    });
   });
 
   it("should override permanent flag when explicitly set to true", async () => {
@@ -184,14 +188,14 @@ describe("Main Action Logic", () => {
     // Wait for async operations
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mockSendSchemaToApi).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      expect.any(Object),
-      "test-token",
-      "test-project",
-      "123",
-      true, // permanent should be true due to explicit override
-    );
+    expect(mockSendSchemaToApi).toHaveBeenCalledWith({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: expect.any(Object),
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "123",
+      permanent: true, // permanent should be true due to explicit override
+    });
   });
 
   it("should override permanent flag when explicitly set to false", async () => {
@@ -221,13 +225,13 @@ describe("Main Action Logic", () => {
     // Wait for async operations
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mockSendSchemaToApi).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
-      expect.any(Object),
-      "test-token",
-      "test-project",
-      "feature-branch",
-      false, // permanent should be false due to explicit override
-    );
+    expect(mockSendSchemaToApi).toHaveBeenCalledWith({
+      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      schema: expect.any(Object),
+      authToken: "test-token",
+      project: "test-project",
+      snapshotName: "feature-branch",
+      permanent: false, // permanent should be false due to explicit override
+    });
   });
 });
