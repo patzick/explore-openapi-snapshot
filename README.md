@@ -111,9 +111,17 @@ The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/
   "schema": { /* your OpenAPI schema */ },
   "project": "your-project-name",
   "name": "your-snapshot-name",
-  "permanent": true
+  "permanent": true,
+  "baseBranchName": "main"
 }
 ```
+
+**Payload Fields:**
+- `schema` - Your OpenAPI schema object
+- `project` - Project name from action input
+- `name` - Snapshot name (PR number or branch name)
+- `permanent` - Boolean indicating if snapshot should be permanent
+- `baseBranchName` - Base branch name (only included for PR contexts)
 
 ### Outputs
 
@@ -124,24 +132,55 @@ The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/
 
 ### PR Comments
 
-When running in a Pull Request context, the action automatically creates or updates a comment with:
+When running in a Pull Request context, the action automatically creates or updates a comment with different content based on whether changes were detected:
 
-- ✅ **Success/failure status**
-- 🔗 **Snapshot URL**: Direct link to view the snapshot (`https://explore-openapi.dev/view?projectId=xxx&snapshotId=yyy`)
-- 🔄 **Compare URL**: Link to compare changes against the base branch (`https://explore-openapi.dev/compare/projectId/from/baseBranch/to/prNumber`)
+#### When Changes Are Detected (`sameAsBase: false`)
+
+The comment includes:
+- ✅ **Success status**
+- 🔄 **Compare URL**: Link to compare changes between base and feature branches
+- 🔗 **Snapshot URL**: Direct link to view the new snapshot
 - 📝 **Additional messages** from the API response
 
-**Example PR Comment:**
+**Example PR Comment with Changes:**
 ```markdown
-## 📸 OpenAPI Snapshot Created
+## 📸 OpenAPI Snapshot
 
 ✅ Successfully created snapshot!
 
-🔗 **Snapshot URL:** https://explore-openapi.dev/view?projectId=my-project&snapshotId=snapshot-123
+🔄 **Compare URL:** https://explore-openapi.dev/compare?project=my-project&baseSnapshot=main&featureSnapshot=123
 
-🔄 **Compare URL:** https://explore-openapi.dev/compare/my-project/from/main/to/456
+🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=my-project&snapshot=pr-snapshot-name
 
 📝 Schema validation passed with 2 warnings
+```
+
+#### When No Changes Are Detected (`sameAsBase: true`)
+
+The comment shows that the schema is identical to the base branch:
+- ℹ️ **No changes message** with base branch name
+- 🔗 **Base branch snapshot link** for reference
+
+**Example PR Comment with No Changes:**
+```markdown
+## 📸 OpenAPI Snapshot
+
+ℹ️ No changes detected compared to main
+
+🔗 **Base Branch Snapshot:** https://explore-openapi.dev/view?project=my-project&snapshot=main
+```
+
+#### Error Handling
+
+When the action fails, an error comment is created:
+
+**Example Error Comment:**
+```markdown
+## 📸 OpenAPI Snapshot
+
+❌ Failed to create snapshot
+
+**Error:** Authentication failed: Invalid token provided
 ```
 
 ## Development
