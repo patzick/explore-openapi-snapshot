@@ -4,7 +4,7 @@ export default defineConfig({
   entry: "src/index.ts",
   format: "esm",
   platform: "node",
-  target: "node24",
+  target: "es2020",
   external: [],
   noExternal: ["@actions/core", "@actions/github"],
   clean: true,
