@@ -336,4 +336,92 @@ describe("createOrUpdateComment", () => {
       ),
     ).rejects.toThrow("Failed to update comment");
   });
+
+  it("should show no changes message when sameAsBase is true", async () => {
+    mockOctokit.rest.issues.listComments.mockResolvedValueOnce({
+      data: [],
+    });
+
+    await createOrUpdateComment(
+      mockOctokit,
+      {
+        snapshot: {
+          id: "snapshot-123",
+          projectId: "project-456",
+          name: "test-snapshot",
+          status: "available" as const,
+          hash: "abc123",
+          size: 1024,
+          description: null,
+          expiredAt: null,
+          reason: null,
+          createdAt: "2023-01-01T00:00:00Z",
+          modifiedAt: "2023-01-01T00:00:00Z",
+        },
+        sameAsBase: true,
+        message: null,
+        error: null,
+      },
+      "test-project",
+    );
+
+    const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
+    expect(callArgs.body).toContain("ℹ️ No changes detected compared to main");
+    expect(callArgs.body).toContain(
+      "🔗 **Base Branch Snapshot:** https://explore-openapi.dev/view?project=test-project&snapshot=main",
+    );
+    expect(callArgs.body).not.toContain("✅ Successfully created snapshot!");
+    expect(callArgs.body).not.toContain("🔄 **Compare URL:**");
+  });
+
+  it("should show no changes message with fallback when base branch unknown", async () => {
+    const originalContext = github.context;
+    (github as any).context = {
+      ...originalContext,
+      payload: {
+        pull_request: {
+          number: 123,
+          // Missing base.ref
+        },
+      },
+    };
+
+    mockOctokit.rest.issues.listComments.mockResolvedValueOnce({
+      data: [],
+    });
+
+    await createOrUpdateComment(
+      mockOctokit,
+      {
+        snapshot: {
+          id: "snapshot-123",
+          projectId: "project-456",
+          name: "test-snapshot",
+          status: "available" as const,
+          hash: "abc123",
+          size: 1024,
+          description: null,
+          expiredAt: null,
+          reason: null,
+          createdAt: "2023-01-01T00:00:00Z",
+          modifiedAt: "2023-01-01T00:00:00Z",
+        },
+        sameAsBase: true,
+        message: null,
+        error: null,
+      },
+      "test-project",
+    );
+
+    const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
+    expect(callArgs.body).toContain(
+      "ℹ️ No changes detected compared to base branch",
+    );
+    expect(callArgs.body).toContain(
+      "🔗 **Base Branch Snapshot:** https://explore-openapi.dev/view?project=test-project&snapshot=base branch",
+    );
+
+    // Restore context
+    (github as any).context = originalContext;
+  });
 });

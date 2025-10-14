@@ -19898,17 +19898,25 @@ function formatComment(response, project) {
 		return lines.join("\n");
 	}
 	const apiResponse = response;
-	lines.push("✅ Successfully created snapshot!");
-	const { context } = import_github$1;
-	const prNumber = context.payload.pull_request?.number;
-	const baseBranch = context.payload.pull_request?.base?.ref;
-	if (project && prNumber && baseBranch) {
+	if (apiResponse.sameAsBase) {
+		const { context } = import_github$1;
+		const baseBranch = context.payload.pull_request?.base?.ref || "base branch";
+		lines.push(`ℹ️ No changes detected compared to ${baseBranch}`);
 		lines.push("");
-		lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
-	}
-	if (apiResponse.snapshot?.id && project) {
-		lines.push("");
-		lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.snapshot.name}`);
+		lines.push(`🔗 **Base Branch Snapshot:** https://explore-openapi.dev/view?project=${project}&snapshot=${baseBranch}`);
+	} else {
+		lines.push("✅ Successfully created snapshot!");
+		const { context } = import_github$1;
+		const prNumber = context.payload.pull_request?.number;
+		const baseBranch = context.payload.pull_request?.base?.ref;
+		if (project && prNumber && baseBranch) {
+			lines.push("");
+			lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+		}
+		if (apiResponse.snapshot?.id && project) {
+			lines.push("");
+			lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.snapshot.name}`);
+		}
 	}
 	if (apiResponse.message) {
 		lines.push("");

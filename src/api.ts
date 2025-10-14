@@ -9,10 +9,20 @@ export type SendSchemaParams = {
   snapshotName: string;
   permanent?: boolean;
   baseBranchName?: string;
-}
+};
 
-export async function sendSchemaToApi(params: SendSchemaParams): Promise<SnapshotReturn> {
-  const { apiUrl, schema, authToken, project, snapshotName, permanent = false, baseBranchName } = params;
+export async function sendSchemaToApi(
+  params: SendSchemaParams,
+): Promise<SnapshotReturn> {
+  const {
+    apiUrl,
+    schema,
+    authToken,
+    project,
+    snapshotName,
+    permanent = false,
+    baseBranchName,
+  } = params;
   try {
     const response = await fetch(apiUrl, {
       method: "POST",

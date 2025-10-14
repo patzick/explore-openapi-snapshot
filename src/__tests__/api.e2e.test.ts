@@ -24,7 +24,7 @@ function loadEnvFile() {
   } catch (error) {
     throw new Error(
       "Failed to load .env file. Make sure it exists and contains required variables. Error: " +
-      error,
+        error,
     );
   }
 }
@@ -96,6 +96,5 @@ describe("E2E Tests", () => {
       console.error("Invalid response:", z.prettifyError(safeParse.error));
     }
     expect(safeParse.success).toBe(true);
-
   }, 30000); // 30 second timeout for API call
 });

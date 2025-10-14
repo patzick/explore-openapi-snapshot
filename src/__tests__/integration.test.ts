@@ -76,7 +76,10 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     // Step 1: Send schema to API
     const apiResult = await sendSchemaToApi({
       apiUrl: "https://api.example.com/snapshot",
-      schema: { openapi: "3.0.0", info: { title: "Test API", version: "1.0.0" } },
+      schema: {
+        openapi: "3.0.0",
+        info: { title: "Test API", version: "1.0.0" },
+      },
       authToken: "test-token",
       project: "test-project",
       snapshotName: "test-snapshot",
@@ -197,7 +200,10 @@ describe("Integration Tests - API to PR Comment Flow", () => {
     // Step 1: Send schema to API
     const apiResult = await sendSchemaToApi({
       apiUrl: "https://api.example.com/snapshot",
-      schema: { openapi: "3.0.0", info: { title: "Updated API", version: "1.1.0" } },
+      schema: {
+        openapi: "3.0.0",
+        info: { title: "Updated API", version: "1.1.0" },
+      },
       authToken: "test-token",
       project: "test-project",
       snapshotName: "test-snapshot",

@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  type Mock,
+} from "vitest";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { sendSchemaToApi } from "../api.js";
@@ -21,7 +29,9 @@ describe("Main Action Logic", () => {
   const mockCore = core as any;
   const mockGithub = github as any;
   const mockSendSchemaToApi = sendSchemaToApi as Mock<typeof sendSchemaToApi>;
-  const mockCreateOrUpdateComment = createOrUpdateComment as Mock<typeof createOrUpdateComment>;
+  const mockCreateOrUpdateComment = createOrUpdateComment as Mock<
+    typeof createOrUpdateComment
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
