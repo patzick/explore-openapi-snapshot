@@ -1,56 +1,52 @@
-import * as core from '@actions/core';
+import * as core from "@actions/core";
+import type { SnapshotReturn } from "./types";
 
-export interface ApiResponse {
-  // Actual API response structure
-  id: string;
-  name: string;
-  projectId: string;
-  status: string;
-  hash: string;
-  size: number;
-  active: boolean;
-  createdAt: string;
-  modifiedAt: string;
-  description: string | null;
-  expiredAt: string | null;
-  reason: string | null;
-  // For error handling
-  success?: boolean;
-  message?: string;
-  [key: string]: unknown;
-}
+export type SendSchemaParams = {
+  apiUrl: string;
+  schema: Record<string, unknown>;
+  authToken: string;
+  project: string;
+  snapshotName: string;
+  permanent?: boolean;
+  baseBranchName?: string;
+};
 
 export async function sendSchemaToApi(
-  apiUrl: string,
-  schema: Record<string, unknown>,
-  authToken: string,
-  project: string,
-  snapshotName: string,
-  permanent: boolean = false
-): Promise<ApiResponse> {
+  params: SendSchemaParams,
+): Promise<SnapshotReturn> {
+  const {
+    apiUrl,
+    schema,
+    authToken,
+    project,
+    snapshotName,
+    permanent = false,
+    baseBranchName,
+  } = params;
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
         schema,
         project,
         name: snapshotName,
-        permanent
+        permanent,
+        ...(baseBranchName && { baseBranchName }),
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
-        `API request failed with status ${response.status}: ${errorText}`
+        `API request failed with status ${response.status}: ${errorText}`,
       );
     }
 
-    const data = await response.json() as ApiResponse;
+    const data = (await response.json()) as SnapshotReturn;
     return data;
   } catch (error) {
     if (error instanceof Error) {

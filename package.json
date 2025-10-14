@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
-    "lint": "oxlint src",
+    "lint": "oxlint src && biome lint src",
+    "format": "biome format --write",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
@@ -25,14 +26,16 @@
     "@actions/github": "6.0.1"
   },
   "devDependencies": {
-    "@types/node": "24.7.0",
-    "oxlint": "1.22.0",
-    "tsdown": "0.15.6",
+    "@types/node": "24.7.2",
+    "@biomejs/biome": "2.2.6",
+    "oxlint": "1.23.0",
+    "tsdown": "0.15.7",
     "typescript": "5.9.3",
-    "vitest": "3.2.4"
+    "vitest": "3.2.4",
+    "zod": "4.1.12"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@10.2.0"
+  "packageManager": "pnpm@10.18.3"
 }
