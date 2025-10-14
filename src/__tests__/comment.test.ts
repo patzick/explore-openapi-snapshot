@@ -126,7 +126,7 @@ describe("createOrUpdateComment", () => {
       "https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
     );
     expect(callArgs.body).toContain(
-      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+      "https://explore-openapi.dev/compare?project=test-project&baseSnapshot=main&featureSnapshot=123",
     );
     expect(callArgs.body).toContain("Snapshot created successfully");
   });
@@ -188,7 +188,7 @@ describe("createOrUpdateComment", () => {
       "https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
     );
     expect(callArgs.body).toContain(
-      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+      "https://explore-openapi.dev/compare?project=test-project&baseSnapshot=main&featureSnapshot=123",
     );
     expect(callArgs.body).not.toContain("📝");
   });

@@ -19911,7 +19911,7 @@ function formatComment(response, project) {
 		const baseBranch = context.payload.pull_request?.base?.ref;
 		if (project && prNumber && baseBranch) {
 			lines.push("");
-			lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`);
+			lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare?project=${project}&baseSnapshot=${baseBranch}&featureSnapshot=${prNumber}`);
 		}
 		if (apiResponse.snapshot?.id && project) {
 			lines.push("");

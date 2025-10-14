@@ -88,7 +88,7 @@ function formatComment(response: SnapshotReturn, project: string): string {
     if (project && prNumber && baseBranch) {
       lines.push("");
       lines.push(
-        `🔄 **Compare URL:** https://explore-openapi.dev/compare/${project}/from/${baseBranch}/to/${prNumber}`,
+        `🔄 **Compare URL:** https://explore-openapi.dev/compare?project=${project}&baseSnapshot=${baseBranch}&featureSnapshot=${prNumber}`,
       );
     }
 

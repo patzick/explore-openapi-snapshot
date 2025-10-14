@@ -105,7 +105,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
       "https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
     );
     expect(commentBody).toContain(
-      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+      "https://explore-openapi.dev/compare?project=test-project&baseSnapshot=main&featureSnapshot=123",
     );
     expect(commentBody).toContain("Snapshot created successfully");
     expect(commentBody).toContain("<!-- openapi-snapshot-comment -->");
@@ -228,7 +228,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
       "https://explore-openapi.dev/view?project=test-project&snapshot=updated-snapshot",
     );
     expect(commentBody).toContain(
-      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+      "https://explore-openapi.dev/compare?project=test-project&baseSnapshot=main&featureSnapshot=123",
     );
     expect(commentBody).toContain("Snapshot updated successfully");
   });
@@ -369,7 +369,7 @@ describe("Integration Tests - API to PR Comment Flow", () => {
       "https://explore-openapi.dev/view?project=test-project&snapshot=minimal-snapshot",
     );
     expect(commentBody).toContain(
-      "https://explore-openapi.dev/compare/test-project/from/main/to/123",
+      "https://explore-openapi.dev/compare?project=test-project&baseSnapshot=main&featureSnapshot=123",
     );
     expect(commentBody).not.toContain("📝");
   });

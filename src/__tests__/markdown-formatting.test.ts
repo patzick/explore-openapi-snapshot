@@ -91,7 +91,7 @@ describe("Markdown Formatting in Comments", () => {
       "🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
     );
     expect(commentBody).toContain(
-      "🔄 **Compare URL:** https://explore-openapi.dev/compare/test-project/from/main/to/123",
+      "🔄 **Compare URL:** https://explore-openapi.dev/compare?project=test-project&baseSnapshot=main&featureSnapshot=123",
     );
 
     // Check message formatting
