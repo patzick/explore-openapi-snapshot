@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Example API",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Example OpenAPI schema for testing the snapshot action"
   },
   "servers": [
@@ -16,7 +16,7 @@
       "get": {
         "summary": "List users",
         "operationId": "getUsers",
-        "description": "Returns a list of users",
+        "description": "Returns a cool list of users",
         "responses": {
           "200": {
             "description": "Successful response",
