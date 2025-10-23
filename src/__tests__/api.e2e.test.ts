@@ -24,7 +24,7 @@ function loadEnvFile() {
   } catch (error) {
     throw new Error(
       "Failed to load .env file. Make sure it exists and contains required variables. Error: " +
-        error,
+      error,
     );
   }
 }
@@ -97,4 +97,42 @@ describe("E2E Tests", () => {
     }
     expect(safeParse.success).toBe(true);
   }, 30000); // 30 second timeout for API call
+
+  it("should detect sameAsBase when PR snapshot matches base snapshot", async () => {
+    // First, create base snapshot
+    const baseSnapshotName = "my-e2e-snapshot";
+    const baseResponse = await sendSchemaToApi({
+      apiUrl: envVars.API_URL,
+      schema: testSchema,
+      authToken: envVars.API_AUTH_TOKEN,
+      project: envVars.TEST_PROJECT,
+      snapshotName: baseSnapshotName,
+      permanent: true,
+    });
+
+    // Verify base snapshot was created successfully
+    expect(baseResponse.snapshot).toBeDefined();
+    expect(baseResponse.snapshot?.name).toBe(baseSnapshotName);
+
+    // Then, send PR snapshot request with the same schema
+    const prSnapshotName = "my-e2e-snapshot-pr";
+    const prResponse = await sendSchemaToApi({
+      apiUrl: envVars.API_URL,
+      schema: testSchema, // Same schema as base
+      authToken: envVars.API_AUTH_TOKEN,
+      project: envVars.TEST_PROJECT,
+      snapshotName: prSnapshotName,
+      permanent: false,
+      baseBranchName: baseSnapshotName, // Reference the base snapshot
+    });
+
+    // Verify sameAsBase flag is true
+    expect(prResponse.sameAsBase).toBe(true);
+
+    // Verify that the old (base) snapshot was returned, not a new one created
+    expect(prResponse.snapshot).toBeDefined();
+    expect(prResponse.snapshot?.name).toBe(baseSnapshotName); // Should return base snapshot name
+    expect(prResponse.snapshot?.id).toBe(baseResponse.snapshot?.id); // Should be the same snapshot ID
+    expect(prResponse.snapshot?.hash).toBe(baseResponse.snapshot?.hash); // Should have the same hash
+  }, 5000); // 5 second timeout for two API calls
 });
