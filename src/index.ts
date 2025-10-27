@@ -2,7 +2,58 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { readFile } from "node:fs/promises";
 import { sendSchemaToApi } from "./api.js";
-import { createOrUpdateComment } from "./comment.js";
+import { getOidcToken } from "./oidc.js";
+import type { SnapshotReturn } from "./types.js";
+
+/**
+ * Add snapshot information to GitHub Actions workflow summary
+ * This is used as a fallback when PR comments cannot be created (e.g., fork PRs)
+ */
+async function addWorkflowSummary(
+  response: SnapshotReturn,
+  project: string,
+): Promise<void> {
+  const { context } = github;
+  const prNumber = context.payload.pull_request?.number;
+  const baseBranch = context.payload.pull_request?.base?.ref;
+
+  let summary = "## 📸 OpenAPI Snapshot\n\n";
+
+  if (response.snapshot) {
+    summary += "✅ **Snapshot created successfully!**\n\n";
+
+    // Add snapshot URL
+    summary += `🔗 **Snapshot URL:** [View Snapshot](https://explore-openapi.dev/view?project=${project}&snapshot=${response.snapshot.name})\n\n`;
+
+    // Add compare URL if in PR context
+    if (prNumber && baseBranch) {
+      summary += `🔄 **Compare URL:** [Compare Changes](https://explore-openapi.dev/compare?project=${project}&baseSnapshot=${baseBranch}&featureSnapshot=${prNumber})\n\n`;
+    }
+
+    // Add snapshot details
+    summary += "### Snapshot Details\n\n";
+    summary += `- **Name:** \`${response.snapshot.name}\`\n`;
+    summary += `- **Project:** \`${project}\`\n`;
+    summary += `- **Size:** ${(response.snapshot.size / 1024).toFixed(2)} KB\n`;
+    summary += `- **Status:** ${response.snapshot.status}\n`;
+
+    if (response.sameAsBase) {
+      summary += `\nℹ️ No changes detected compared to ${baseBranch}\n`;
+    }
+
+    if (response.message) {
+      summary += `\n📝 ${response.message}\n`;
+    }
+  } else if (response.error) {
+    summary += "❌ **Failed to create snapshot**\n\n";
+    summary += `**Error:** ${response.error}\n`;
+  }
+
+  summary +=
+    "\n---\n\n_💡 PR comment will be posted by the backend GitHub App (visible in the PR conversation)._\n";
+
+  await core.summary.addRaw(summary).write();
+}
 
 async function run(): Promise<void> {
   try {
@@ -11,49 +62,43 @@ async function run(): Promise<void> {
     const project = core.getInput("project", { required: true });
     const snapshotNameInput = core.getInput("snapshot-name");
     const authToken = core.getInput("auth-token", { required: false });
-    const githubToken = core.getInput("github-token", { required: true });
     const permanentInput = core.getInput("permanent");
+    const useOidc = core.getInput("use-oidc", { required: false });
+    const oidcAudience = core.getInput("oidc-audience", { required: false });
 
     const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
 
-    // Check if auth-token is missing (common for external contributor PRs)
-    if (!authToken) {
-      const message =
-        "No authentication token provided. This is expected for external contributor PRs as secrets are not available. " +
-        "A maintainer can manually approve and re-run this workflow, or the snapshot will be created when the PR is merged.";
-      core.warning(message);
+    // Determine authentication method
+    let oidcToken: string | undefined;
+    const shouldUseOidc = useOidc.toLowerCase() === "true";
 
-      // If in PR context, create an informative comment
-      if (github.context.payload.pull_request) {
-        try {
-          const octokit = github.getOctokit(githubToken);
-          await createOrUpdateComment(
-            octokit,
-            {
-              snapshot: null,
-              sameAsBase: false,
-              message: null,
-              error: null,
-              skipReason:
-                "⏭️ Snapshot creation skipped for external contributor PR. A maintainer can approve and re-run the workflow to create the snapshot.",
-            },
-            project,
-          );
-          core.info(
-            "Informative comment created in PR about missing auth token",
-          );
-        } catch (commentError) {
-          core.warning(
-            `Failed to create informative comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`,
-          );
-        }
+    if (shouldUseOidc) {
+      // OIDC authentication (new method, works with forks)
+      core.info("Using OIDC authentication (fork-friendly mode)");
+      try {
+        core.info("Requesting OIDC token from GitHub Actions...");
+        oidcToken = await getOidcToken(
+          oidcAudience || "https://explore-openapi.dev",
+        );
+        core.info("OIDC token obtained successfully");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        core.setFailed(
+          `Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`,
+        );
+        return;
       }
-
-      // Exit gracefully without failing the action
-      core.info(
-        "Action completed (skipped snapshot creation due to missing auth token)",
-      );
-      return;
+    } else {
+      // Legacy auth-token method
+      core.info("Using auth-token authentication (legacy mode)");
+      if (!authToken) {
+        const message =
+          "No authentication token provided. This is expected for external contributor PRs as secrets are not available. " +
+          "A maintainer can manually approve and re-run this workflow, or use OIDC authentication by setting 'use-oidc: true'.";
+        core.setFailed(message);
+        return;
+      }
     }
 
     // Generate snapshot name: PR number if in PR context, otherwise branch name
@@ -104,6 +149,7 @@ async function run(): Promise<void> {
       apiUrl,
       schema,
       authToken,
+      oidcToken,
       project,
       snapshotName,
       permanent,
@@ -120,13 +166,12 @@ async function run(): Promise<void> {
       core.setOutput("snapshot-url", snapshotUrl);
     }
 
-    // Create or update PR comment if in PR context
+    // Add snapshot info to workflow summary for easy access
     if (github.context.payload.pull_request) {
-      const octokit = github.getOctokit(githubToken);
-      await createOrUpdateComment(octokit, response, project);
-      core.info("PR comment created/updated successfully");
-    } else {
-      core.warning("Not in a pull request context, skipping comment creation");
+      await addWorkflowSummary(response, project);
+      core.info(
+        "Snapshot information added to workflow summary. PR comment will be posted by the backend via GitHub App.",
+      );
     }
 
     core.info("Action completed successfully!");
@@ -135,29 +180,8 @@ async function run(): Promise<void> {
       error instanceof Error ? error.message : "Unknown error occurred";
     core.setFailed(`Action failed: ${errorMessage}`);
 
-    // Create error comment in PR if possible
-    if (github.context.payload.pull_request) {
-      try {
-        const githubToken = core.getInput("github-token", { required: true });
-        const project = core.getInput("project", { required: true });
-        const octokit = github.getOctokit(githubToken);
-        await createOrUpdateComment(
-          octokit,
-          {
-            snapshot: null,
-            sameAsBase: false,
-            message: null,
-            error: errorMessage,
-          },
-          project,
-        );
-        core.info("Error comment created in PR");
-      } catch (commentError) {
-        core.warning(
-          `Failed to create error comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`,
-        );
-      }
-    }
+    // Note: Error handling and PR comments are managed by the backend
+    core.error(`Snapshot creation failed: ${errorMessage}`);
   }
 }
 

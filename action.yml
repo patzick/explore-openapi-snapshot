@@ -13,15 +13,23 @@ inputs:
     description: "Snapshot name (defaults to PR number if in PR context, otherwise branch name)"
     required: false
   auth-token:
-    description: "Authentication token for API"
+    description: "Authentication token for API (legacy method, use OIDC instead)"
     required: false
   github-token:
-    description: "GitHub token for commenting on PR"
-    required: true
+    description: "GitHub token (deprecated - PR comments are now posted by backend GitHub App)"
+    required: false
     default: ${{ github.token }}
   permanent:
     description: "Whether to create a permanent snapshot (defaults to true for branch/tag pushes, false for PRs)"
     required: false
+  use-oidc:
+    description: "Use OIDC token for authentication (recommended, works with forks)"
+    required: false
+    default: "false"
+  oidc-audience:
+    description: "OIDC token audience (only used when use-oidc is true)"
+    required: false
+    default: "https://explore-openapi.dev"
 
 outputs:
   snapshot-url:

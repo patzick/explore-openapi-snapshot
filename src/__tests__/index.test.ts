@@ -250,7 +250,7 @@ describe("Main Action Logic", () => {
     });
   });
 
-  it("should skip snapshot creation and create informative comment when auth-token is missing in PR context", async () => {
+  it("should fail when auth-token is missing (legacy mode)", async () => {
     // Mock PR context
     mockGithub.context = {
       repo: { owner: "test-owner", repo: "test-repo" },
@@ -263,13 +263,13 @@ describe("Main Action Logic", () => {
       },
     };
 
-    // Mock missing auth-token
+    // Mock missing auth-token (and not using OIDC)
     mockCore.getInput.mockImplementation((name: string) => {
       const inputs: Record<string, string> = {
         "schema-file": "./test-schema.json",
         project: "test-project",
         "auth-token": "", // Missing auth-token
-        "github-token": "test-github-token",
+        "use-oidc": "false", // Not using OIDC
       };
       return inputs[name] || "";
     });
@@ -283,31 +283,13 @@ describe("Main Action Logic", () => {
     // Should not call sendSchemaToApi
     expect(mockSendSchemaToApi).not.toHaveBeenCalled();
 
-    // Should create informative comment
-    expect(mockCreateOrUpdateComment).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        snapshot: null,
-        sameAsBase: false,
-        message: null,
-        error: null,
-        skipReason: expect.stringContaining(
-          "Snapshot creation skipped for external contributor PR",
-        ),
-      }),
-      "test-project",
-    );
-
-    // Should log warning
-    expect(mockCore.warning).toHaveBeenCalledWith(
+    // Should fail the action with appropriate message
+    expect(mockCore.setFailed).toHaveBeenCalledWith(
       expect.stringContaining("No authentication token provided"),
     );
-
-    // Should not fail the action
-    expect(mockCore.setFailed).not.toHaveBeenCalled();
   });
 
-  it("should skip snapshot creation gracefully when auth-token is missing outside PR context", async () => {
+  it("should fail when auth-token is missing outside PR context (legacy mode)", async () => {
     // Mock branch push context (not a PR)
     mockGithub.context = {
       repo: { owner: "test-owner", repo: "test-repo" },
@@ -323,7 +305,7 @@ describe("Main Action Logic", () => {
         "schema-file": "./test-schema.json",
         project: "test-project",
         "auth-token": "", // Missing auth-token
-        "github-token": "test-github-token",
+        "use-oidc": "false", // Not using OIDC
       };
       return inputs[name] || "";
     });
@@ -337,15 +319,9 @@ describe("Main Action Logic", () => {
     // Should not call sendSchemaToApi
     expect(mockSendSchemaToApi).not.toHaveBeenCalled();
 
-    // Should not try to create comment (not in PR context)
-    expect(mockCreateOrUpdateComment).not.toHaveBeenCalled();
-
-    // Should log warning
-    expect(mockCore.warning).toHaveBeenCalledWith(
+    // Should fail the action
+    expect(mockCore.setFailed).toHaveBeenCalledWith(
       expect.stringContaining("No authentication token provided"),
     );
-
-    // Should not fail the action
-    expect(mockCore.setFailed).not.toHaveBeenCalled();
   });
 });

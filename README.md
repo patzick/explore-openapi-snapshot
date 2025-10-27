@@ -7,7 +7,8 @@ GitHub Action to create a snapshot of OpenAPI schema at https://explore-openapi.
 - 📤 Send OpenAPI schema to explore-openapi.dev
 - 🏷️ Automatic snapshot naming (PR number or branch name)
 - 📁 Project-based organization
-- 🔐 Secure authentication with auth token
+- 🔐 **Dual authentication modes**: OIDC (fork-friendly, no secrets needed) or auth token (legacy)
+- 🍴 **Fork-friendly**: OIDC authentication works seamlessly with external contributor PRs
 - 💬 Automatic PR comment creation/update with snapshot results
 - ⏰ **Smart snapshot retention**: Permanent snapshots for branches/tags, temporary for PRs (30-day retention)
 - 🔗 **Dual URLs**: Direct snapshot view + compare URLs for easy diff visualization
@@ -16,7 +17,51 @@ GitHub Action to create a snapshot of OpenAPI schema at https://explore-openapi.
 
 ## Usage
 
-### Basic Example
+### Recommended: OIDC Authentication (Fork-Friendly)
+
+**🌟 This is the recommended approach** - it works with forks and doesn't require storing secrets!
+
+**Minimal configuration:**
+```yaml
+name: Create OpenAPI Snapshot
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # For OIDC authentication
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create OpenAPI Snapshot
+        uses: patzick/explore-openapi-snapshot@v1
+        with:
+          schema-file: './openapi.json'
+          project: 'my-api-project'
+          use-oidc: 'true'
+```
+
+**Key Benefits of OIDC:**
+- ✅ Works with external contributor PRs from forks
+- ✅ No secrets to manage or rotate
+- ✅ More secure - tokens are short-lived
+- ✅ GitHub's native trust mechanism
+- ✅ Simpler permissions - only `id-token: write` required
+
+**📝 How PR Comments Work:**
+- 🤖 PR comments are **posted by the backend GitHub App** 
+- ✅ Works from forks and regular PRs alike
+- 📊 Workflow summary also shows snapshot info for easy access in the Actions tab
+
+### Legacy: Auth Token Method
+
+For backward compatibility, the action still supports authentication via auth token:
 
 ```yaml
 name: Create OpenAPI Snapshot
@@ -46,6 +91,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+**⚠️ Limitation:** This method won't work for external contributor PRs as secrets are not available to forks.
+
 ### Advanced Example with Custom Snapshot Name
 
 ```yaml
@@ -56,28 +103,44 @@ jobs:
     project: 'my-api-project'
     snapshot-name: 'v2.1.0-beta'
     permanent: 'true'  # Override default behavior
-    auth-token: ${{ secrets.API_AUTH_TOKEN }}
-    github-token: ${{ secrets.GITHUB_TOKEN }}
+    use-oidc: 'true'
 ```
 
 ### Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `schema-file` | Path to the JSON schema file | Yes | - |
-| `project` | Project name or project ID | Yes | - |
+| `schema-file` | Path to the JSON schema file | **Yes** | - |
+| `project` | Project name or project ID | **Yes** | - |
 | `snapshot-name` | Snapshot name (auto-generated if not provided) | No | PR number (in PR context) or branch name |
 | `permanent` | Whether to create a permanent snapshot | No | `true` for branch/tag pushes, `false` for PRs |
-| `auth-token` | Authentication token for API | No* | - |
-| `github-token` | GitHub token for commenting on PR | Yes | `${{ github.token }}` |
+| `use-oidc` | Use OIDC authentication (recommended) | No | `false` |
+| `oidc-audience` | OIDC token audience | No | `https://explore-openapi.dev` |
+| `auth-token` | Authentication token for API (legacy) | No* | - |
+| `github-token` | GitHub token (deprecated) | No | `${{ github.token }}` |
 
-**\*Note on `auth-token` for External Contributors:**
-The `auth-token` is technically optional but required for snapshot creation. When external contributors create PRs from forks, GitHub Actions doesn't expose repository secrets for security reasons. In these cases, the action will:
+**Truly Required Inputs:**
+- `schema-file` - Path to your OpenAPI schema
+- `project` - Your project identifier
+- `use-oidc: 'true'` - When using OIDC authentication (recommended)
+- OR `auth-token` - When using legacy authentication
+
+**Optional/Deprecated:**
+- `github-token` - Deprecated, not used (PR comments are posted by backend GitHub App)
+
+#### Authentication Methods
+
+**🌟 OIDC Authentication (Recommended):**
+Set `use-oidc: 'true'` and add `id-token: write` permission to your workflow. This method:
+- Works with external contributor PRs from forks
+- Requires no secrets
+- Uses short-lived tokens for better security
+
+**Legacy Auth Token:**
+The `auth-token` is technically optional but required when not using OIDC. When external contributors create PRs from forks without OIDC enabled, GitHub Actions doesn't expose repository secrets for security reasons. In these cases, the action will:
 - Skip snapshot creation gracefully without failing
 - Create an informative PR comment explaining the situation
 - Allow maintainers to manually approve and re-run the workflow to create the snapshot
-
-For repository members and maintainers, the `auth-token` should always be provided.
 
 #### Snapshot Naming Logic
 
@@ -138,46 +201,77 @@ The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/
 | `snapshot-url` | URL to the created snapshot |
 | `response` | Full API response as JSON string |
 
-## External Contributor PRs
+## External Contributor PRs (Fork PRs)
 
-When external contributors create PRs from forks, GitHub Actions doesn't expose repository secrets (including `API_AUTH_TOKEN`) for security reasons. The action handles this gracefully:
+### With OIDC + GitHub App Backend (Recommended) 🌟
 
-### Behavior for External PRs
+When using OIDC authentication with a GitHub App backend:
 
-1. **No Failure**: The action completes successfully without failing the workflow
-2. **Informative Comment**: An automatic PR comment is created explaining the situation
-3. **Maintainer Action**: Repository maintainers can approve and re-run the workflow to create the snapshot
+**What Works:**
+- ✅ Snapshot creation (OIDC authentication succeeds)
+- ✅ **PR comments** (posted by GitHub App from backend)
+- ✅ All snapshot functionality
 
-### Example PR Comment for External Contributors
+**How It Works:**
+1. Fork PR runs the action with OIDC token
+2. Backend validates OIDC token
+3. Backend creates snapshot
+4. **Backend uses GitHub App to post comment** (has permissions even for forks!)
+
+**Result:** External contributors see comments just like repository members! 🎉
+
+### With OIDC (Without GitHub App Backend)
+
+If you haven't implemented the GitHub App backend yet, snapshots still work but with limitations:
+
+**What Works:**
+- ✅ Snapshot creation (OIDC authentication succeeds)
+- ✅ Workflow summary with snapshot links
+- ✅ All snapshot functionality
+
+**What Doesn't Work:**
+- ⚠️ PR comments (GitHub security prevents write access from forks)
+
+**Where to Find Snapshot Info:**
+1. Go to the **Actions** tab in the PR
+2. Click on the workflow run
+3. View the **workflow summary** - snapshot URL and compare URL will be there
+
+### Example Workflow Summary (Fork PRs)
+
+When the action runs from a fork, the workflow summary will show:
 
 ```markdown
 ## 📸 OpenAPI Snapshot
 
-⏭️ Snapshot creation skipped for external contributor PR. A maintainer can approve and re-run the workflow to create the snapshot.
+✅ **Snapshot created successfully!**
+
+🔗 **Snapshot URL:** [View Snapshot](https://explore-openapi.dev/view?project=my-project&snapshot=123)
+
+🔄 **Compare URL:** [Compare Changes](https://explore-openapi.dev/compare?project=my-project&baseSnapshot=main&featureSnapshot=123)
+
+### Snapshot Details
+
+- **Name:** `123`
+- **Project:** `my-project`
+- **Size:** 12.34 KB
+- **Status:** available
+
+---
+
+💡 This snapshot was created using OIDC authentication. PR comments cannot be posted from fork workflows due to GitHub security restrictions.
 ```
 
-### Maintainer Workflow
+### With Auth Token (Legacy)
 
-1. Review the external contributor's PR
-2. If you want to create a snapshot, go to the Actions tab
-3. Find the failed workflow run
-4. Click "Re-run jobs" → "Re-run all jobs"
-5. Approve the workflow run when prompted
-6. The snapshot will be created and the PR comment will be updated
+When external contributors create PRs from forks, GitHub Actions doesn't expose repository secrets (including `auth-token`) for security reasons. The action handles this gracefully:
 
-### Alternative: Using `pull_request_target`
+**Behavior:**
+1. **No Failure**: The action completes successfully without failing the workflow
+2. **Informative Comment**: An automatic PR comment is created explaining the situation (if permissions allow)
+3. **Maintainer Action**: Repository maintainers can approve and re-run the workflow to create the snapshot
 
-⚠️ **Security Warning**: Only use this if you fully understand the security implications.
-
-You can modify your workflow to use `pull_request_target` instead of `pull_request`. This event runs in the context of the base repository and has access to secrets:
-
-```yaml
-on:
-  pull_request_target:  # Instead of pull_request
-    branches: [main]
-```
-
-**Important**: This approach runs with access to secrets even for untrusted code from external contributors. Only use this if you trust all contributors or have additional security measures in place.
+**Recommendation**: Switch to OIDC authentication for better fork support.
 
 ### PR Comments
 
