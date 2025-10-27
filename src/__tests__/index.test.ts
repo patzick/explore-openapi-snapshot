@@ -249,4 +249,103 @@ describe("Main Action Logic", () => {
       baseBranchName: undefined,
     });
   });
+
+  it("should skip snapshot creation and create informative comment when auth-token is missing in PR context", async () => {
+    // Mock PR context
+    mockGithub.context = {
+      repo: { owner: "test-owner", repo: "test-repo" },
+      ref: "refs/pull/123/merge",
+      payload: {
+        pull_request: {
+          number: 123,
+          base: { ref: "main" },
+        },
+      },
+    };
+
+    // Mock missing auth-token
+    mockCore.getInput.mockImplementation((name: string) => {
+      const inputs: Record<string, string> = {
+        "schema-file": "./test-schema.json",
+        project: "test-project",
+        "auth-token": "", // Missing auth-token
+        "github-token": "test-github-token",
+      };
+      return inputs[name] || "";
+    });
+
+    // Import and run the action
+    await import("../index.js");
+
+    // Wait for async operations
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Should not call sendSchemaToApi
+    expect(mockSendSchemaToApi).not.toHaveBeenCalled();
+
+    // Should create informative comment
+    expect(mockCreateOrUpdateComment).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        snapshot: null,
+        sameAsBase: false,
+        message: null,
+        error: null,
+        skipReason: expect.stringContaining(
+          "Snapshot creation skipped for external contributor PR",
+        ),
+      }),
+      "test-project",
+    );
+
+    // Should log warning
+    expect(mockCore.warning).toHaveBeenCalledWith(
+      expect.stringContaining("No authentication token provided"),
+    );
+
+    // Should not fail the action
+    expect(mockCore.setFailed).not.toHaveBeenCalled();
+  });
+
+  it("should skip snapshot creation gracefully when auth-token is missing outside PR context", async () => {
+    // Mock branch push context (not a PR)
+    mockGithub.context = {
+      repo: { owner: "test-owner", repo: "test-repo" },
+      ref: "refs/heads/main",
+      payload: {
+        // No pull_request field
+      },
+    };
+
+    // Mock missing auth-token
+    mockCore.getInput.mockImplementation((name: string) => {
+      const inputs: Record<string, string> = {
+        "schema-file": "./test-schema.json",
+        project: "test-project",
+        "auth-token": "", // Missing auth-token
+        "github-token": "test-github-token",
+      };
+      return inputs[name] || "";
+    });
+
+    // Import and run the action
+    await import("../index.js");
+
+    // Wait for async operations
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Should not call sendSchemaToApi
+    expect(mockSendSchemaToApi).not.toHaveBeenCalled();
+
+    // Should not try to create comment (not in PR context)
+    expect(mockCreateOrUpdateComment).not.toHaveBeenCalled();
+
+    // Should log warning
+    expect(mockCore.warning).toHaveBeenCalledWith(
+      expect.stringContaining("No authentication token provided"),
+    );
+
+    // Should not fail the action
+    expect(mockCore.setFailed).not.toHaveBeenCalled();
+  });
 });

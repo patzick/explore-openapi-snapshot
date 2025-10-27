@@ -68,8 +68,16 @@ jobs:
 | `project` | Project name or project ID | Yes | - |
 | `snapshot-name` | Snapshot name (auto-generated if not provided) | No | PR number (in PR context) or branch name |
 | `permanent` | Whether to create a permanent snapshot | No | `true` for branch/tag pushes, `false` for PRs |
-| `auth-token` | Authentication token for API | Yes | - |
+| `auth-token` | Authentication token for API | No* | - |
 | `github-token` | GitHub token for commenting on PR | Yes | `${{ github.token }}` |
+
+**\*Note on `auth-token` for External Contributors:**
+The `auth-token` is technically optional but required for snapshot creation. When external contributors create PRs from forks, GitHub Actions doesn't expose repository secrets for security reasons. In these cases, the action will:
+- Skip snapshot creation gracefully without failing
+- Create an informative PR comment explaining the situation
+- Allow maintainers to manually approve and re-run the workflow to create the snapshot
+
+For repository members and maintainers, the `auth-token` should always be provided.
 
 #### Snapshot Naming Logic
 
@@ -129,6 +137,47 @@ The action sends your OpenAPI schema to `https://editor-api.explore-openapi.dev/
 |--------|-------------|
 | `snapshot-url` | URL to the created snapshot |
 | `response` | Full API response as JSON string |
+
+## External Contributor PRs
+
+When external contributors create PRs from forks, GitHub Actions doesn't expose repository secrets (including `API_AUTH_TOKEN`) for security reasons. The action handles this gracefully:
+
+### Behavior for External PRs
+
+1. **No Failure**: The action completes successfully without failing the workflow
+2. **Informative Comment**: An automatic PR comment is created explaining the situation
+3. **Maintainer Action**: Repository maintainers can approve and re-run the workflow to create the snapshot
+
+### Example PR Comment for External Contributors
+
+```markdown
+## 📸 OpenAPI Snapshot
+
+⏭️ Snapshot creation skipped for external contributor PR. A maintainer can approve and re-run the workflow to create the snapshot.
+```
+
+### Maintainer Workflow
+
+1. Review the external contributor's PR
+2. If you want to create a snapshot, go to the Actions tab
+3. Find the failed workflow run
+4. Click "Re-run jobs" → "Re-run all jobs"
+5. Approve the workflow run when prompted
+6. The snapshot will be created and the PR comment will be updated
+
+### Alternative: Using `pull_request_target`
+
+⚠️ **Security Warning**: Only use this if you fully understand the security implications.
+
+You can modify your workflow to use `pull_request_target` instead of `pull_request`. This event runs in the context of the base repository and has access to secrets:
+
+```yaml
+on:
+  pull_request_target:  # Instead of pull_request
+    branches: [main]
+```
+
+**Important**: This approach runs with access to secrets even for untrusted code from external contributors. Only use this if you trust all contributors or have additional security measures in place.
 
 ### PR Comments
 
