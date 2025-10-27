@@ -54,6 +54,12 @@ export async function createOrUpdateComment(
 function formatComment(response: SnapshotReturn, project: string): string {
   const lines = [COMMENT_IDENTIFIER, "## 📸 OpenAPI Snapshot", ""];
 
+  // Check if this is a skip response (e.g., external contributor PR)
+  if (response.skipReason) {
+    lines.push(response.skipReason);
+    return lines.join("\n");
+  }
+
   // Check if this is an error response
   if (!response.snapshot) {
     lines.push("❌ Failed to create snapshot");

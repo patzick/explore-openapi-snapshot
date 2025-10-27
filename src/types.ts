@@ -19,6 +19,7 @@ export const SnapshotReturnSchema = z.object({
   sameAsBase: z.boolean(),
   message: z.string().optional().nullable(),
   error: z.string().optional().nullable(),
+  skipReason: z.string().optional().nullable(),
 });
 
 export type SnapshotReturn = z.infer<typeof SnapshotReturnSchema>;
