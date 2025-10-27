@@ -10,11 +10,51 @@ async function run(): Promise<void> {
     const schemaFile = core.getInput("schema-file", { required: true });
     const project = core.getInput("project", { required: true });
     const snapshotNameInput = core.getInput("snapshot-name");
-    const authToken = core.getInput("auth-token", { required: true });
+    const authToken = core.getInput("auth-token", { required: false });
     const githubToken = core.getInput("github-token", { required: true });
     const permanentInput = core.getInput("permanent");
 
     const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
+
+    // Check if auth-token is missing (common for external contributor PRs)
+    if (!authToken) {
+      const message =
+        "No authentication token provided. This is expected for external contributor PRs as secrets are not available. " +
+        "A maintainer can manually approve and re-run this workflow, or the snapshot will be created when the PR is merged.";
+      core.warning(message);
+
+      // If in PR context, create an informative comment
+      if (github.context.payload.pull_request) {
+        try {
+          const octokit = github.getOctokit(githubToken);
+          await createOrUpdateComment(
+            octokit,
+            {
+              snapshot: null,
+              sameAsBase: false,
+              message: null,
+              error: null,
+              skipReason:
+                "⏭️ Snapshot creation skipped for external contributor PR. A maintainer can approve and re-run the workflow to create the snapshot.",
+            },
+            project,
+          );
+          core.info(
+            "Informative comment created in PR about missing auth token",
+          );
+        } catch (commentError) {
+          core.warning(
+            `Failed to create informative comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`,
+          );
+        }
+      }
+
+      // Exit gracefully without failing the action
+      core.info(
+        "Action completed (skipped snapshot creation due to missing auth token)",
+      );
+      return;
+    }
 
     // Generate snapshot name: PR number if in PR context, otherwise branch name
     let snapshotName = snapshotNameInput;

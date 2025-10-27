@@ -424,4 +424,29 @@ describe("createOrUpdateComment", () => {
     // Restore context
     (github as any).context = originalContext;
   });
+
+  it("should show skip reason message when provided", async () => {
+    mockOctokit.rest.issues.listComments.mockResolvedValueOnce({
+      data: [],
+    });
+
+    await createOrUpdateComment(
+      mockOctokit,
+      {
+        snapshot: null,
+        sameAsBase: false,
+        message: null,
+        error: null,
+        skipReason:
+          "⏭️ Snapshot creation skipped for external contributor PR. A maintainer can approve and re-run the workflow to create the snapshot.",
+      },
+      "test-project",
+    );
+
+    const callArgs = mockOctokit.rest.issues.createComment.mock.calls[0][0];
+    expect(callArgs.body).toContain("⏭️ Snapshot creation skipped");
+    expect(callArgs.body).toContain("external contributor PR");
+    expect(callArgs.body).not.toContain("❌ Failed to create snapshot");
+    expect(callArgs.body).not.toContain("✅ Successfully created snapshot!");
+  });
 });

@@ -14,7 +14,7 @@ inputs:
     required: false
   auth-token:
     description: "Authentication token for API"
-    required: true
+    required: false
   github-token:
     description: "GitHub token for commenting on PR"
     required: true
