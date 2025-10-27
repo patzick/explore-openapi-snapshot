@@ -12,7 +12,7 @@ GitHub Action to create a snapshot of OpenAPI schema at https://explore-openapi.
 - ⏰ **Smart snapshot retention**: Permanent snapshots for branches/tags, temporary for PRs (30-day retention)
 - 🔗 **Dual URLs**: Direct snapshot view + compare URLs for easy diff visualization
 - ⚡ Built with modern TypeScript tools (tsdown, vitest, oxlint)
-- 🎯 Node 24+ support
+- 🎯 Node 20+ support
 
 ## Usage
 
