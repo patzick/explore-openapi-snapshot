@@ -31699,7 +31699,7 @@ const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.ur
 ;// CONCATENATED MODULE: ./src/api.ts
 
 async function sendSchemaToApi(params) {
-    const { apiUrl, schema, oidcToken, project, snapshotName, } = params;
+    const { apiUrl, schema, oidcToken, project, snapshotName } = params;
     try {
         const response = await fetch(apiUrl, {
             method: "POST",
@@ -31808,7 +31808,7 @@ async function run() {
             schema,
             oidcToken,
             project,
-            snapshotName
+            snapshotName,
         });
         core.info(`API response received: ${JSON.stringify(response)}`);
         // Set outputs
