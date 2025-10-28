@@ -18,4 +18,3 @@ export async function getOidcToken(audience?: string): Promise<string> {
     throw new Error(`Failed to retrieve OIDC token: ${errorMessage}`);
   }
 }
-

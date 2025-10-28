@@ -4,47 +4,27 @@ import type { SnapshotReturn } from "./types";
 export type SendSchemaParams = {
   apiUrl: string;
   schema: Record<string, unknown>;
-  authToken?: string;
-  oidcToken?: string;
+  oidcToken: string;
   project: string;
-  snapshotName: string;
-  permanent?: boolean;
-  baseBranchName?: string;
+  snapshotName?: string;
 };
 
 export async function sendSchemaToApi(
   params: SendSchemaParams,
 ): Promise<SnapshotReturn> {
-  const {
-    apiUrl,
-    schema,
-    authToken,
-    oidcToken,
-    project,
-    snapshotName,
-    permanent = false,
-    baseBranchName,
-  } = params;
-
-  // Determine which token to use (prefer OIDC, fallback to authToken)
-  const token = oidcToken || authToken;
-  if (!token) {
-    throw new Error("Either authToken or oidcToken must be provided");
-  }
+  const { apiUrl, schema, oidcToken, project, snapshotName } = params;
 
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${oidcToken}`,
       },
       body: JSON.stringify({
         schema,
         project,
-        name: snapshotName,
-        permanent,
-        ...(baseBranchName && { baseBranchName }),
+        snapshotName,
       }),
     });
 
