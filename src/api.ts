@@ -1,31 +1,52 @@
 import * as core from "@actions/core";
-import type { SnapshotReturn } from "./types";
+import type { ForkContext, SnapshotReturn } from "./types";
 
 export type SendSchemaParams = {
   apiUrl: string;
   schema: Record<string, unknown>;
-  oidcToken: string;
+  oidcToken?: string;
   project: string;
   snapshotName?: string;
+  forkContext?: ForkContext;
 };
 
 export async function sendSchemaToApi(
   params: SendSchemaParams,
 ): Promise<SnapshotReturn> {
-  const { apiUrl, schema, oidcToken, project, snapshotName } = params;
+  const { apiUrl, schema, oidcToken, project, snapshotName, forkContext } =
+    params;
 
   try {
-    const response = await fetch(apiUrl, {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Determine API endpoint and authentication method
+    let targetUrl = apiUrl;
+    const body: Record<string, unknown> = {
+      schema,
+      project,
+      snapshotName,
+    };
+
+    if (oidcToken) {
+      // OIDC authentication for regular PRs and pushes
+      headers.Authorization = `Bearer ${oidcToken}`;
+    } else if (
+      forkContext?.targetRepository &&
+      forkContext?.targetPullRequest &&
+      forkContext?.commitSha
+    ) {
+      // Fork authentication for fork PRs
+      targetUrl = `${apiUrl}-fork`;
+      headers.Authorization = `Fork ${forkContext.targetRepository}`;
+      body.forkContext = forkContext;
+    }
+
+    const response = await fetch(targetUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${oidcToken}`,
-      },
-      body: JSON.stringify({
-        schema,
-        project,
-        snapshotName,
-      }),
+      headers,
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
