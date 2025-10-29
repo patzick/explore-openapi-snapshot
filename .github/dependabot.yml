@@ -1,0 +1,70 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 10
+    groups:
+      # Group all production dependencies together
+      production-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "@vitest/*"
+          - "vitest"
+          - "typescript"
+          - "oxlint"
+          - "biome"
+          - "@biomejs/*"
+          - "@vercel/ncc"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group all dev dependencies together
+      development-dependencies:
+        patterns:
+          - "@types/*"
+          - "@vitest/*"
+          - "vitest"
+          - "typescript"
+          - "oxlint"
+          - "biome"
+          - "@biomejs/*"
+          - "@vercel/ncc"
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    assignees:
+      - "patzick"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    assignees:
+      - "patzick"
