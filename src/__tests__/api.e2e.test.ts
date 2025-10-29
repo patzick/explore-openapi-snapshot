@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { sendSchemaToApi } from "../api.js";
 import z from "zod";
 import { SnapshotReturnSchema } from "../types.js";
+import { createMockGitHubOidcToken } from "./mockJwt.js";
 
 // Load environment variables from .env file
 function loadEnvFile() {
@@ -24,7 +25,7 @@ function loadEnvFile() {
   } catch (error) {
     throw new Error(
       "Failed to load .env file. Make sure it exists and contains required variables. Error: " +
-        error,
+      error,
     );
   }
 }
@@ -81,10 +82,19 @@ describe("E2E Tests", () => {
   };
 
   it("should successfully send schema to API and receive valid response", async () => {
+    const mockOidcToken = createMockGitHubOidcToken(
+      {},
+      {
+        owner: envVars.TEST_REPO?.split("/")[0] || "testowner",
+        repo: envVars.TEST_REPO?.split("/")[1] || "testrepo",
+        eventType: "push",
+      },
+    );
+
     const response = await sendSchemaToApi({
       apiUrl: envVars.API_URL,
       schema: testSchema,
-      oidcToken: envVars.API_AUTH_TOKEN,
+      oidcToken: mockOidcToken,
       project: envVars.TEST_PROJECT,
       snapshotName: envVars.TEST_SNAPSHOT_NAME,
     });
@@ -95,17 +105,26 @@ describe("E2E Tests", () => {
       expect(z.prettifyError(safeParse.error)).toEqual("");
     }
     expect(safeParse.success).toBe(true);
-  }, 30000); // 30 second timeout for API call
+  }, 5000); // 5 second timeout for API call
 
   it("should detect sameAsBase when PR snapshot matches base snapshot", async () => {
+    const mockOidcToken = createMockGitHubOidcToken(
+      {
+        base_ref: "main",
+      },
+      {
+        owner: envVars.TEST_REPO?.split("/")[0] || "testowner",
+        repo: envVars.TEST_REPO?.split("/")[1] || "testrepo",
+        eventType: "push",
+      },
+    );
+
     // First, create base snapshot
-    const baseSnapshotName = "main";
     const _baseResponse = await sendSchemaToApi({
       apiUrl: envVars.API_URL,
       schema: testSchema,
-      oidcToken: envVars.API_AUTH_TOKEN,
+      oidcToken: mockOidcToken,
       project: envVars.TEST_PROJECT,
-      snapshotName: baseSnapshotName,
     });
 
     const parsedBaseResponse = SnapshotReturnSchema.safeParse(_baseResponse);
@@ -123,16 +142,24 @@ describe("E2E Tests", () => {
     expect(parsedBaseResponse.data.id).toBeDefined();
     // expect(baseResponse.snapshot?.name).toBe(baseSnapshotName);
 
+    const prMockOidcToken = createMockGitHubOidcToken(
+      {
+        base_ref: "main",
+        ref: "refs/pull/10/merge",
+      },
+      {
+        owner: envVars.TEST_REPO?.split("/")[0] || "testowner",
+        repo: envVars.TEST_REPO?.split("/")[1] || "testrepo",
+        eventType: "pr",
+      },
+    );
+
     // Then, send PR snapshot request with the same schema
-    const prSnapshotName = "my-e2e-snapshot-pr";
     const _prResponse = await sendSchemaToApi({
       apiUrl: envVars.API_URL,
       schema: testSchema, // Same schema as base
-      oidcToken: envVars.API_AUTH_TOKEN,
+      oidcToken: prMockOidcToken,
       project: envVars.TEST_PROJECT,
-      snapshotName: prSnapshotName,
-      // permanent: false,
-      // baseBranchName: baseSnapshotName, // Reference the base snapshot
     });
 
     const parsedPrResponse = SnapshotReturnSchema.safeParse(_prResponse);
@@ -152,4 +179,52 @@ describe("E2E Tests", () => {
     expect(parsedPrResponse.data.id).toBeDefined();
     expect(parsedPrResponse.data.id).toBe(parsedBaseResponse.data.id); // Should be the same snapshot ID
   }, 5000); // 5 second timeout for two API calls
+
+  it("should successfully send schema with push event to main branch", async () => {
+    // Create a mock OIDC token for a push event to main branch
+    const mockOidcToken = createMockGitHubOidcToken(
+      {
+        actor: "testuser",
+        actor_id: "12345678",
+        ref: "refs/heads/main",
+        ref_protected: "true",
+        ref_type: "branch",
+        event_name: "push",
+        head_ref: "",
+        base_ref: "",
+        workflow: "Test OpenAPI Snapshot Action",
+        repository_visibility: "public",
+        runner_environment: "github-hosted",
+      },
+      {
+        owner: envVars.TEST_REPO?.split("/")[0] || "testowner",
+        repo: envVars.TEST_REPO?.split("/")[1] || "testrepo",
+        eventType: "push",
+      },
+    );
+
+    const response = await sendSchemaToApi({
+      apiUrl: envVars.API_URL,
+      schema: testSchema,
+      oidcToken: mockOidcToken,
+      project: envVars.TEST_PROJECT,
+    });
+
+    // Verify response has expected structure
+    const safeParse = SnapshotReturnSchema.safeParse(response);
+    if (!safeParse.success) {
+      expect(z.prettifyError(safeParse.error)).toEqual("");
+    }
+    expect(safeParse.success).toBe(true);
+
+    if (safeParse.success) {
+      // Verify the snapshot was created/updated successfully
+      expect(safeParse.data.id).toBeDefined();
+      expect(safeParse.data.url).toMatchInlineSnapshot(
+        `"https://explore-openapi.dev/view?project=${envVars.TEST_PROJECT}&snapshot=main"`,
+      );
+      // For push events to main, sameAsBase could be true or false depending on whether schema changed
+      expect(typeof safeParse.data.sameAsBase).toBe("boolean");
+    }
+  }, 5000); // 5 second timeout for API call
 });

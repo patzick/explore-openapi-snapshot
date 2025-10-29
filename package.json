@@ -31,7 +31,7 @@
     "@vercel/ncc": "0.38.4",
     "oxlint": "1.24.0",
     "typescript": "5.9.3",
-    "vitest": "4.0.1",
+    "vitest": "4.0.4",
     "zod": "4.1.12"
   },
   "engines": {
