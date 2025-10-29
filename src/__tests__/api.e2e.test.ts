@@ -24,7 +24,7 @@ function loadEnvFile() {
   } catch (error) {
     throw new Error(
       "Failed to load .env file. Make sure it exists and contains required variables. Error: " +
-      error,
+        error,
     );
   }
 }
@@ -84,55 +84,72 @@ describe("E2E Tests", () => {
     const response = await sendSchemaToApi({
       apiUrl: envVars.API_URL,
       schema: testSchema,
-      authToken: envVars.API_AUTH_TOKEN,
+      oidcToken: envVars.API_AUTH_TOKEN,
       project: envVars.TEST_PROJECT,
       snapshotName: envVars.TEST_SNAPSHOT_NAME,
-      permanent: true,
     });
 
     // Verify response has expected structure (without snapshotting dynamic values)
     const safeParse = SnapshotReturnSchema.safeParse(response);
     if (!safeParse.success) {
-      console.error("Invalid response:", z.prettifyError(safeParse.error));
+      expect(z.prettifyError(safeParse.error)).toEqual("");
     }
     expect(safeParse.success).toBe(true);
   }, 30000); // 30 second timeout for API call
 
   it("should detect sameAsBase when PR snapshot matches base snapshot", async () => {
     // First, create base snapshot
-    const baseSnapshotName = "my-e2e-snapshot";
-    const baseResponse = await sendSchemaToApi({
+    const baseSnapshotName = "main";
+    const _baseResponse = await sendSchemaToApi({
       apiUrl: envVars.API_URL,
       schema: testSchema,
-      authToken: envVars.API_AUTH_TOKEN,
+      oidcToken: envVars.API_AUTH_TOKEN,
       project: envVars.TEST_PROJECT,
       snapshotName: baseSnapshotName,
-      permanent: true,
     });
 
+    const parsedBaseResponse = SnapshotReturnSchema.safeParse(_baseResponse);
+
+    const errorMessage = parsedBaseResponse.success
+      ? undefined
+      : z.prettifyError(parsedBaseResponse.error);
+    expect(errorMessage).toBeUndefined();
+
+    if (!parsedBaseResponse.success) {
+      throw new Error(errorMessage);
+    }
+
     // Verify base snapshot was created successfully
-    expect(baseResponse.snapshot).toBeDefined();
-    expect(baseResponse.snapshot?.name).toBe(baseSnapshotName);
+    expect(parsedBaseResponse.data.id).toBeDefined();
+    // expect(baseResponse.snapshot?.name).toBe(baseSnapshotName);
 
     // Then, send PR snapshot request with the same schema
     const prSnapshotName = "my-e2e-snapshot-pr";
-    const prResponse = await sendSchemaToApi({
+    const _prResponse = await sendSchemaToApi({
       apiUrl: envVars.API_URL,
       schema: testSchema, // Same schema as base
-      authToken: envVars.API_AUTH_TOKEN,
+      oidcToken: envVars.API_AUTH_TOKEN,
       project: envVars.TEST_PROJECT,
       snapshotName: prSnapshotName,
-      permanent: false,
-      baseBranchName: baseSnapshotName, // Reference the base snapshot
+      // permanent: false,
+      // baseBranchName: baseSnapshotName, // Reference the base snapshot
     });
 
+    const parsedPrResponse = SnapshotReturnSchema.safeParse(_prResponse);
+    const prErrorMessage = parsedPrResponse.success
+      ? undefined
+      : z.prettifyError(parsedPrResponse.error);
+    expect(prErrorMessage).toBeUndefined();
+
+    if (!parsedPrResponse.success) {
+      throw new Error(prErrorMessage);
+    }
+
     // Verify sameAsBase flag is true
-    expect(prResponse.sameAsBase).toBe(true);
+    expect(parsedPrResponse.data.sameAsBase).toBe(true);
 
     // Verify that the old (base) snapshot was returned, not a new one created
-    expect(prResponse.snapshot).toBeDefined();
-    expect(prResponse.snapshot?.name).toBe(baseSnapshotName); // Should return base snapshot name
-    expect(prResponse.snapshot?.id).toBe(baseResponse.snapshot?.id); // Should be the same snapshot ID
-    expect(prResponse.snapshot?.hash).toBe(baseResponse.snapshot?.hash); // Should have the same hash
+    expect(parsedPrResponse.data.id).toBeDefined();
+    expect(parsedPrResponse.data.id).toBe(parsedBaseResponse.data.id); // Should be the same snapshot ID
   }, 5000); // 5 second timeout for two API calls
 });

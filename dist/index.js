@@ -31699,20 +31699,18 @@ const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.ur
 ;// CONCATENATED MODULE: ./src/api.ts
 
 async function sendSchemaToApi(params) {
-    const { apiUrl, schema, authToken, project, snapshotName, permanent = false, baseBranchName, } = params;
+    const { apiUrl, schema, oidcToken, project, snapshotName } = params;
     try {
         const response = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${authToken}`,
+                Authorization: `Bearer ${oidcToken}`,
             },
             body: JSON.stringify({
                 schema,
                 project,
-                name: snapshotName,
-                permanent,
-                ...(baseBranchName && { baseBranchName }),
+                snapshotName,
             }),
         });
         if (!response.ok) {
@@ -31730,92 +31728,25 @@ async function sendSchemaToApi(params) {
     }
 }
 
-;// CONCATENATED MODULE: ./src/comment.ts
+;// CONCATENATED MODULE: ./src/oidc.ts
 
-const COMMENT_IDENTIFIER = "<!-- openapi-snapshot-comment -->";
-async function createOrUpdateComment(octokit, response, project) {
-    const { context } = github;
-    const { owner, repo } = context.repo;
-    const issue_number = context.payload.pull_request?.number;
-    if (!issue_number || issue_number <= 0) {
-        throw new Error("No pull request number found");
-    }
-    // Create comment body
-    const commentBody = formatComment(response, project);
-    // Find existing comment
-    const { data: comments } = await octokit.rest.issues.listComments({
-        owner,
-        repo,
-        issue_number,
-    });
-    const existingComment = comments.find((comment) => comment.body?.includes(COMMENT_IDENTIFIER));
-    if (existingComment) {
-        // Update existing comment
-        await octokit.rest.issues.updateComment({
-            owner,
-            repo,
-            comment_id: existingComment.id,
-            body: commentBody,
-        });
-    }
-    else {
-        // Create new comment
-        await octokit.rest.issues.createComment({
-            owner,
-            repo,
-            issue_number,
-            body: commentBody,
-        });
-    }
-}
-function formatComment(response, project) {
-    const lines = [COMMENT_IDENTIFIER, "## 📸 OpenAPI Snapshot", ""];
-    // Check if this is a skip response (e.g., external contributor PR)
-    if (response.skipReason) {
-        lines.push(response.skipReason);
-        return lines.join("\n");
-    }
-    // Check if this is an error response
-    if (!response.snapshot) {
-        lines.push("❌ Failed to create snapshot");
-        if (response.error) {
-            lines.push("");
-            lines.push(`**Error:** ${response.error}`);
+/**
+ * Get GitHub OIDC token for authentication
+ * This token can be used to authenticate with external services
+ * that trust GitHub's OIDC provider
+ */
+async function getOidcToken(audience) {
+    try {
+        const oidcToken = await core.getIDToken(audience);
+        if (!oidcToken) {
+            throw new Error("Failed to get OIDC token from GitHub Actions");
         }
-        return lines.join("\n");
+        return oidcToken;
     }
-    // Handle successful API response
-    const apiResponse = response;
-    // Check if schema is same as base branch
-    if (apiResponse.sameAsBase) {
-        const { context } = github;
-        const baseBranch = context.payload.pull_request?.base?.ref || "base branch";
-        lines.push(`ℹ️ No changes detected compared to ${baseBranch}`);
-        lines.push("");
-        lines.push(`🔗 **Base Branch Snapshot:** https://explore-openapi.dev/view?project=${project}&snapshot=${baseBranch}`);
+    catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Failed to retrieve OIDC token: ${errorMessage}`);
     }
-    else {
-        lines.push("✅ Successfully created snapshot!");
-        // Generate compare URL if in PR context (first)
-        const { context } = github;
-        const prNumber = context.payload.pull_request?.number;
-        const baseBranch = context.payload.pull_request?.base?.ref;
-        if (project && prNumber && baseBranch) {
-            lines.push("");
-            lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare?project=${project}&baseSnapshot=${baseBranch}&featureSnapshot=${prNumber}`);
-        }
-        // Generate snapshot URL (second)
-        if (apiResponse.snapshot?.id && project) {
-            lines.push("");
-            lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.snapshot.name}`);
-        }
-    }
-    // Add any additional message
-    if (apiResponse.message) {
-        lines.push("");
-        lines.push(`📝 ${apiResponse.message}`);
-    }
-    return lines.join("\n");
 }
 
 ;// CONCATENATED MODULE: ./src/index.ts
@@ -31830,34 +31761,18 @@ async function run() {
         const schemaFile = core.getInput("schema-file", { required: true });
         const project = core.getInput("project", { required: true });
         const snapshotNameInput = core.getInput("snapshot-name");
-        const authToken = core.getInput("auth-token", { required: false });
-        const githubToken = core.getInput("github-token", { required: true });
-        const permanentInput = core.getInput("permanent");
-        const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
-        // Check if auth-token is missing (common for external contributor PRs)
-        if (!authToken) {
-            const message = "No authentication token provided. This is expected for external contributor PRs as secrets are not available. " +
-                "A maintainer can manually approve and re-run this workflow, or the snapshot will be created when the PR is merged.";
-            core.warning(message);
-            // If in PR context, create an informative comment
-            if (github.context.payload.pull_request) {
-                try {
-                    const octokit = github.getOctokit(githubToken);
-                    await createOrUpdateComment(octokit, {
-                        snapshot: null,
-                        sameAsBase: false,
-                        message: null,
-                        error: null,
-                        skipReason: "⏭️ Snapshot creation skipped for external contributor PR. A maintainer can approve and re-run the workflow to create the snapshot.",
-                    }, project);
-                    core.info("Informative comment created in PR about missing auth token");
-                }
-                catch (commentError) {
-                    core.warning(`Failed to create informative comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`);
-                }
-            }
-            // Exit gracefully without failing the action
-            core.info("Action completed (skipped snapshot creation due to missing auth token)");
+        const apiUrl = "https://action.api.explore-openapi.dev/v1/snapshot";
+        // Get OIDC token for authentication
+        core.info("Using OIDC authentication");
+        let oidcToken;
+        try {
+            core.info("Requesting OIDC token from GitHub Actions...");
+            oidcToken = await getOidcToken("https://explore-openapi.dev");
+            core.info("OIDC token obtained successfully");
+        }
+        catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            core.setFailed(`Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`);
             return;
         }
         // Generate snapshot name: PR number if in PR context, otherwise branch name
@@ -31880,76 +31795,35 @@ async function run() {
                 }
             }
         }
-        // Determine if snapshot should be permanent
-        // Permanent if explicitly set, or if not in PR context (branch/tag push)
-        let permanent = false;
-        if (permanentInput) {
-            permanent = permanentInput.toLowerCase() === "true";
-        }
-        else {
-            // Default: permanent for branch/tag pushes, temporary for PRs
-            permanent = !github.context.payload.pull_request;
-        }
         core.info(`Project: ${project}`);
         core.info(`Snapshot name: ${snapshotName}`);
-        core.info(`Permanent snapshot: ${permanent}`);
         core.info(`Reading schema from: ${schemaFile}`);
         // Read the JSON schema file
         const schemaContent = await (0,promises_namespaceObject.readFile)(schemaFile, "utf-8");
         const schema = JSON.parse(schemaContent);
         core.info(`Sending schema to API: ${apiUrl}`);
-        // Get base branch name if in PR context
-        const baseBranchName = github.context.payload.pull_request?.base?.ref;
         // Send schema to API
         const response = await sendSchemaToApi({
             apiUrl,
             schema,
-            authToken,
+            oidcToken,
             project,
             snapshotName,
-            permanent,
-            baseBranchName,
         });
         core.info(`API response received: ${JSON.stringify(response)}`);
         // Set outputs
         core.setOutput("response", JSON.stringify(response));
-        if (response.snapshot?.id && project) {
+        if (response.url) {
             // Generate snapshot URL from response data
-            const snapshotUrl = `https://explore-openapi.dev/view?project=${project}&snapshot=${response.snapshot.name}`;
-            core.setOutput("snapshot-url", snapshotUrl);
-        }
-        // Create or update PR comment if in PR context
-        if (github.context.payload.pull_request) {
-            const octokit = github.getOctokit(githubToken);
-            await createOrUpdateComment(octokit, response, project);
-            core.info("PR comment created/updated successfully");
-        }
-        else {
-            core.warning("Not in a pull request context, skipping comment creation");
+            core.setOutput("snapshot-url", response.url);
         }
         core.info("Action completed successfully!");
     }
     catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         core.setFailed(`Action failed: ${errorMessage}`);
-        // Create error comment in PR if possible
-        if (github.context.payload.pull_request) {
-            try {
-                const githubToken = core.getInput("github-token", { required: true });
-                const project = core.getInput("project", { required: true });
-                const octokit = github.getOctokit(githubToken);
-                await createOrUpdateComment(octokit, {
-                    snapshot: null,
-                    sameAsBase: false,
-                    message: null,
-                    error: errorMessage,
-                }, project);
-                core.info("Error comment created in PR");
-            }
-            catch (commentError) {
-                core.warning(`Failed to create error comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`);
-            }
-        }
+        // Note: Error handling and PR comments are managed by the backend
+        core.error(`Snapshot creation failed: ${errorMessage}`);
     }
 }
 run();
