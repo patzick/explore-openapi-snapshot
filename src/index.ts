@@ -13,20 +13,29 @@ async function run(): Promise<void> {
 
     const apiUrl = "https://action.api.explore-openapi.dev/v1/snapshot";
 
-    // Get OIDC token for authentication
-    core.info("Using OIDC authentication");
-    let oidcToken: string;
-    try {
-      core.info("Requesting OIDC token from GitHub Actions...");
-      oidcToken = await getOidcToken("https://explore-openapi.dev");
-      core.info("OIDC token obtained successfully");
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      core.setFailed(
-        `Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`,
-      );
-      return;
+    // Detect if we're in a fork context
+    const isFork =
+      github.context.payload.pull_request?.head?.repo?.fork === true;
+
+    let oidcToken: string | undefined;
+
+    if (isFork) {
+      core.info("Fork PR detected - using fork context mode");
+    } else {
+      // Get OIDC token for authentication
+      core.info("Using OIDC authentication");
+      try {
+        core.info("Requesting OIDC token from GitHub Actions...");
+        oidcToken = await getOidcToken("https://explore-openapi.dev");
+        core.info("OIDC token obtained successfully");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        core.setFailed(
+          `Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`,
+        );
+        return;
+      }
     }
 
     // Generate snapshot name: PR number if in PR context, otherwise branch name
@@ -58,6 +67,22 @@ async function run(): Promise<void> {
 
     core.info(`Sending schema to API: ${apiUrl}`);
 
+    // Prepare fork context if in fork mode
+    const forkContext = isFork
+      ? {
+        targetRepository:
+          github.context.payload.pull_request?.base?.repo?.full_name,
+        targetPullRequest: github.context.payload.pull_request?.number,
+        commitSha:
+          github.context.payload.pull_request?.head?.sha ||
+          github.context.sha,
+      }
+      : undefined;
+
+    if (forkContext) {
+      core.info(`Fork context: ${JSON.stringify(forkContext)}`);
+    }
+
     // Send schema to API
     const response = await sendSchemaToApi({
       apiUrl,
@@ -65,6 +90,7 @@ async function run(): Promise<void> {
       oidcToken,
       project,
       snapshotName,
+      forkContext,
     });
 
     core.info(`API response received: ${JSON.stringify(response)}`);

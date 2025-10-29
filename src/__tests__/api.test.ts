@@ -81,4 +81,99 @@ describe("sendSchemaToApi", () => {
       }),
     ).rejects.toThrow("Network error");
   });
+
+  it("should send fork context to fork endpoint with Fork Authorization header", async () => {
+    const mockResponse = {
+      id: "snapshot-456",
+      url: "https://explore-openapi.dev/view?project=test-project&snapshot=10",
+      sameAsBase: false,
+      message: null,
+      error: null,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const result = await sendSchemaToApi({
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
+      schema: { openapi: "3.0.0" },
+      project: "test-project",
+      snapshotName: "10",
+      forkContext: {
+        targetRepository: "owner/repo",
+        targetPullRequest: 10,
+        commitSha: "abc123def456",
+      },
+    });
+
+    expect(result).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://action.api.explore-openapi.dev/v1/snapshot-fork",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Fork owner/repo",
+        },
+        body: JSON.stringify({
+          schema: { openapi: "3.0.0" },
+          project: "test-project",
+          snapshotName: "10",
+          forkContext: {
+            targetRepository: "owner/repo",
+            targetPullRequest: 10,
+            commitSha: "abc123def456",
+          },
+        }),
+      }),
+    );
+  });
+
+  it("should not use fork endpoint if fork context is incomplete", async () => {
+    const mockResponse = {
+      id: "snapshot-789",
+      url: "https://explore-openapi.dev/view?project=test-project&snapshot=test",
+      sameAsBase: false,
+      message: null,
+      error: null,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    // Fork context with missing fields should not trigger fork mode
+    const result = await sendSchemaToApi({
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
+      schema: { openapi: "3.0.0" },
+      project: "test-project",
+      snapshotName: "test",
+      forkContext: {
+        targetRepository: "owner/repo",
+        // Missing targetPullRequest and commitSha
+      },
+    });
+
+    expect(result).toEqual(mockResponse);
+    // Should use regular endpoint, not fork endpoint
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://action.api.explore-openapi.dev/v1/snapshot",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // No Authorization header
+        },
+        body: JSON.stringify({
+          schema: { openapi: "3.0.0" },
+          project: "test-project",
+          snapshotName: "test",
+          // No forkContext in body
+        }),
+      }),
+    );
+  });
 });
