@@ -15,11 +15,11 @@ export const SnapshotSchema = z.object({
 });
 
 export const SnapshotReturnSchema = z.object({
-  snapshot: SnapshotSchema.nullable(),
+  id: z.string().optional(),
+  url: z.string(),
   sameAsBase: z.boolean(),
   message: z.string().optional().nullable(),
   error: z.string().optional().nullable(),
-  skipReason: z.string().optional().nullable(),
 });
 
 export type SnapshotReturn = z.infer<typeof SnapshotReturnSchema>;
