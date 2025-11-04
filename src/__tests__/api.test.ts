@@ -12,19 +12,8 @@ describe("sendSchemaToApi", () => {
 
   it("should send schema to API successfully", async () => {
     const mockResponse = {
-      snapshot: {
-        id: "snapshot-123",
-        projectId: "project-456",
-        name: "test-snapshot",
-        status: "available" as const,
-        hash: "abc123",
-        size: 1024,
-        description: null,
-        expiredAt: null,
-        reason: null,
-        createdAt: "2023-01-01T00:00:00Z",
-        modifiedAt: "2023-01-01T00:00:00Z",
-      },
+      id: "snapshot-123",
+      url: "https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
       sameAsBase: false,
       message: null,
       error: null,
@@ -36,28 +25,26 @@ describe("sendSchemaToApi", () => {
     });
 
     const result = await sendSchemaToApi({
-      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
       schema: { openapi: "3.0.0" },
-      authToken: "test-token",
+      oidcToken: "test-oidc-token",
       project: "test-project",
       snapshotName: "test-snapshot",
-      permanent: false,
     });
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      "https://action.api.explore-openapi.dev/v1/snapshot",
       expect.objectContaining({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer test-token",
+          Authorization: "Bearer test-oidc-token",
         },
         body: JSON.stringify({
           schema: { openapi: "3.0.0" },
           project: "test-project",
-          name: "test-snapshot",
-          permanent: false,
+          snapshotName: "test-snapshot",
         }),
       }),
     );
@@ -72,12 +59,11 @@ describe("sendSchemaToApi", () => {
 
     await expect(
       sendSchemaToApi({
-        apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+        apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
         schema: { openapi: "3.0.0" },
-        authToken: "invalid-token",
+        oidcToken: "invalid-token",
         project: "test-project",
         snapshotName: "test-snapshot",
-        permanent: false,
       }),
     ).rejects.toThrow("API request failed with status 401");
   });
@@ -87,31 +73,19 @@ describe("sendSchemaToApi", () => {
 
     await expect(
       sendSchemaToApi({
-        apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+        apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
         schema: { openapi: "3.0.0" },
-        authToken: "test-token",
+        oidcToken: "test-token",
         project: "test-project",
         snapshotName: "test-snapshot",
-        permanent: false,
       }),
     ).rejects.toThrow("Network error");
   });
 
-  it("should send permanent flag when set to true", async () => {
+  it("should send fork context to fork endpoint with Fork Authorization header", async () => {
     const mockResponse = {
-      snapshot: {
-        id: "snapshot-permanent",
-        projectId: "project-456",
-        name: "permanent-snapshot",
-        status: "available" as const,
-        hash: "abc123",
-        size: 1024,
-        description: null,
-        expiredAt: null,
-        reason: null,
-        createdAt: "2023-01-01T00:00:00Z",
-        modifiedAt: "2023-01-01T00:00:00Z",
-      },
+      id: "snapshot-456",
+      url: "https://explore-openapi.dev/view?project=test-project&snapshot=10",
       sameAsBase: false,
       message: null,
       error: null,
@@ -123,48 +97,44 @@ describe("sendSchemaToApi", () => {
     });
 
     const result = await sendSchemaToApi({
-      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
       schema: { openapi: "3.0.0" },
-      authToken: "test-token",
       project: "test-project",
-      snapshotName: "permanent-snapshot",
-      permanent: true,
+      snapshotName: "10",
+      forkContext: {
+        targetRepository: "owner/repo",
+        targetPullRequest: 10,
+        commitSha: "abc123def456",
+      },
     });
 
     expect(result).toEqual(mockResponse);
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      "https://action.api.explore-openapi.dev/v1/snapshot-fork",
       expect.objectContaining({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer test-token",
+          Authorization: "Fork owner/repo",
         },
         body: JSON.stringify({
           schema: { openapi: "3.0.0" },
           project: "test-project",
-          name: "permanent-snapshot",
-          permanent: true,
+          snapshotName: "10",
+          forkContext: {
+            targetRepository: "owner/repo",
+            targetPullRequest: 10,
+            commitSha: "abc123def456",
+          },
         }),
       }),
     );
   });
 
-  it("should send baseBranchName when provided", async () => {
+  it("should not use fork endpoint if fork context is incomplete", async () => {
     const mockResponse = {
-      snapshot: {
-        id: "snapshot-with-base",
-        projectId: "project-456",
-        name: "pr-snapshot",
-        status: "available" as const,
-        hash: "abc123",
-        size: 1024,
-        description: null,
-        expiredAt: null,
-        reason: null,
-        createdAt: "2023-01-01T00:00:00Z",
-        modifiedAt: "2023-01-01T00:00:00Z",
-      },
+      id: "snapshot-789",
+      url: "https://explore-openapi.dev/view?project=test-project&snapshot=test",
       sameAsBase: false,
       message: null,
       error: null,
@@ -175,31 +145,33 @@ describe("sendSchemaToApi", () => {
       json: async () => mockResponse,
     });
 
+    // Fork context with missing fields should not trigger fork mode
     const result = await sendSchemaToApi({
-      apiUrl: "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
       schema: { openapi: "3.0.0" },
-      authToken: "test-token",
       project: "test-project",
-      snapshotName: "pr-snapshot",
-      permanent: false,
-      baseBranchName: "main",
+      snapshotName: "test",
+      forkContext: {
+        targetRepository: "owner/repo",
+        // Missing targetPullRequest and commitSha
+      },
     });
 
     expect(result).toEqual(mockResponse);
+    // Should use regular endpoint, not fork endpoint
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://editor-api.explore-openapi.dev/public/v1/snapshot",
+      "https://action.api.explore-openapi.dev/v1/snapshot",
       expect.objectContaining({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: "Bearer test-token",
+          // No Authorization header
         },
         body: JSON.stringify({
           schema: { openapi: "3.0.0" },
           project: "test-project",
-          name: "pr-snapshot",
-          permanent: false,
-          baseBranchName: "main",
+          snapshotName: "test",
+          // No forkContext in body
         }),
       }),
     );

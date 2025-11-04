@@ -31699,21 +31699,34 @@ const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.ur
 ;// CONCATENATED MODULE: ./src/api.ts
 
 async function sendSchemaToApi(params) {
-    const { apiUrl, schema, authToken, project, snapshotName, permanent = false, baseBranchName, } = params;
+    const { apiUrl, schema, oidcToken, project, snapshotName, forkContext } = params;
     try {
-        const response = await fetch(apiUrl, {
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        // Determine API endpoint and authentication method
+        let targetUrl = apiUrl;
+        const body = {
+            schema,
+            project,
+            snapshotName,
+        };
+        if (oidcToken) {
+            // OIDC authentication for regular PRs and pushes
+            headers.Authorization = `Bearer ${oidcToken}`;
+        }
+        else if (forkContext?.targetRepository &&
+            forkContext?.targetPullRequest &&
+            forkContext?.commitSha) {
+            // Fork authentication for fork PRs
+            targetUrl = `${apiUrl}-fork`;
+            headers.Authorization = `Fork ${forkContext.targetRepository}`;
+            body.forkContext = forkContext;
+        }
+        const response = await fetch(targetUrl, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${authToken}`,
-            },
-            body: JSON.stringify({
-                schema,
-                project,
-                name: snapshotName,
-                permanent,
-                ...(baseBranchName && { baseBranchName }),
-            }),
+            headers,
+            body: JSON.stringify(body),
         });
         if (!response.ok) {
             const errorText = await response.text();
@@ -31730,87 +31743,25 @@ async function sendSchemaToApi(params) {
     }
 }
 
-;// CONCATENATED MODULE: ./src/comment.ts
+;// CONCATENATED MODULE: ./src/oidc.ts
 
-const COMMENT_IDENTIFIER = "<!-- openapi-snapshot-comment -->";
-async function createOrUpdateComment(octokit, response, project) {
-    const { context } = github;
-    const { owner, repo } = context.repo;
-    const issue_number = context.payload.pull_request?.number;
-    if (!issue_number || issue_number <= 0) {
-        throw new Error("No pull request number found");
-    }
-    // Create comment body
-    const commentBody = formatComment(response, project);
-    // Find existing comment
-    const { data: comments } = await octokit.rest.issues.listComments({
-        owner,
-        repo,
-        issue_number,
-    });
-    const existingComment = comments.find((comment) => comment.body?.includes(COMMENT_IDENTIFIER));
-    if (existingComment) {
-        // Update existing comment
-        await octokit.rest.issues.updateComment({
-            owner,
-            repo,
-            comment_id: existingComment.id,
-            body: commentBody,
-        });
-    }
-    else {
-        // Create new comment
-        await octokit.rest.issues.createComment({
-            owner,
-            repo,
-            issue_number,
-            body: commentBody,
-        });
-    }
-}
-function formatComment(response, project) {
-    const lines = [COMMENT_IDENTIFIER, "## 📸 OpenAPI Snapshot", ""];
-    // Check if this is an error response
-    if (!response.snapshot) {
-        lines.push("❌ Failed to create snapshot");
-        if (response.error) {
-            lines.push("");
-            lines.push(`**Error:** ${response.error}`);
+/**
+ * Get GitHub OIDC token for authentication
+ * This token can be used to authenticate with external services
+ * that trust GitHub's OIDC provider
+ */
+async function getOidcToken(audience) {
+    try {
+        const oidcToken = await core.getIDToken(audience);
+        if (!oidcToken) {
+            throw new Error("Failed to get OIDC token from GitHub Actions");
         }
-        return lines.join("\n");
+        return oidcToken;
     }
-    // Handle successful API response
-    const apiResponse = response;
-    // Check if schema is same as base branch
-    if (apiResponse.sameAsBase) {
-        const { context } = github;
-        const baseBranch = context.payload.pull_request?.base?.ref || "base branch";
-        lines.push(`ℹ️ No changes detected compared to ${baseBranch}`);
-        lines.push("");
-        lines.push(`🔗 **Base Branch Snapshot:** https://explore-openapi.dev/view?project=${project}&snapshot=${baseBranch}`);
+    catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Failed to retrieve OIDC token: ${errorMessage}`);
     }
-    else {
-        lines.push("✅ Successfully created snapshot!");
-        // Generate compare URL if in PR context (first)
-        const { context } = github;
-        const prNumber = context.payload.pull_request?.number;
-        const baseBranch = context.payload.pull_request?.base?.ref;
-        if (project && prNumber && baseBranch) {
-            lines.push("");
-            lines.push(`🔄 **Compare URL:** https://explore-openapi.dev/compare?project=${project}&baseSnapshot=${baseBranch}&featureSnapshot=${prNumber}`);
-        }
-        // Generate snapshot URL (second)
-        if (apiResponse.snapshot?.id && project) {
-            lines.push("");
-            lines.push(`🔗 **Snapshot URL:** https://explore-openapi.dev/view?project=${project}&snapshot=${apiResponse.snapshot.name}`);
-        }
-    }
-    // Add any additional message
-    if (apiResponse.message) {
-        lines.push("");
-        lines.push(`📝 ${apiResponse.message}`);
-    }
-    return lines.join("\n");
 }
 
 ;// CONCATENATED MODULE: ./src/index.ts
@@ -31825,10 +31776,27 @@ async function run() {
         const schemaFile = core.getInput("schema-file", { required: true });
         const project = core.getInput("project", { required: true });
         const snapshotNameInput = core.getInput("snapshot-name");
-        const authToken = core.getInput("auth-token", { required: true });
-        const githubToken = core.getInput("github-token", { required: true });
-        const permanentInput = core.getInput("permanent");
-        const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
+        const apiUrl = "https://action.api.explore-openapi.dev/v1/snapshot";
+        // Detect if we're in a fork context
+        const isFork = github.context.payload.pull_request?.head?.repo?.fork === true;
+        let oidcToken;
+        if (isFork) {
+            core.info("Fork PR detected - using fork context mode");
+        }
+        else {
+            // Get OIDC token for authentication
+            core.info("Using OIDC authentication");
+            try {
+                core.info("Requesting OIDC token from GitHub Actions...");
+                oidcToken = await getOidcToken("https://explore-openapi.dev");
+                core.info("OIDC token obtained successfully");
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "Unknown error";
+                core.setFailed(`Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`);
+                return;
+            }
+        }
         // Generate snapshot name: PR number if in PR context, otherwise branch name
         let snapshotName = snapshotNameInput;
         if (!snapshotName) {
@@ -31849,76 +31817,48 @@ async function run() {
                 }
             }
         }
-        // Determine if snapshot should be permanent
-        // Permanent if explicitly set, or if not in PR context (branch/tag push)
-        let permanent = false;
-        if (permanentInput) {
-            permanent = permanentInput.toLowerCase() === "true";
-        }
-        else {
-            // Default: permanent for branch/tag pushes, temporary for PRs
-            permanent = !github.context.payload.pull_request;
-        }
         core.info(`Project: ${project}`);
         core.info(`Snapshot name: ${snapshotName}`);
-        core.info(`Permanent snapshot: ${permanent}`);
         core.info(`Reading schema from: ${schemaFile}`);
         // Read the JSON schema file
         const schemaContent = await (0,promises_namespaceObject.readFile)(schemaFile, "utf-8");
         const schema = JSON.parse(schemaContent);
         core.info(`Sending schema to API: ${apiUrl}`);
-        // Get base branch name if in PR context
-        const baseBranchName = github.context.payload.pull_request?.base?.ref;
+        // Prepare fork context if in fork mode
+        const forkContext = isFork
+            ? {
+                targetRepository: github.context.payload.pull_request?.base?.repo?.full_name,
+                targetPullRequest: github.context.payload.pull_request?.number,
+                commitSha: github.context.payload.pull_request?.head?.sha ||
+                    github.context.sha,
+            }
+            : undefined;
+        if (forkContext) {
+            core.info(`Fork context: ${JSON.stringify(forkContext)}`);
+        }
         // Send schema to API
         const response = await sendSchemaToApi({
             apiUrl,
             schema,
-            authToken,
+            oidcToken,
             project,
             snapshotName,
-            permanent,
-            baseBranchName,
+            forkContext,
         });
         core.info(`API response received: ${JSON.stringify(response)}`);
         // Set outputs
         core.setOutput("response", JSON.stringify(response));
-        if (response.snapshot?.id && project) {
+        if (response.url) {
             // Generate snapshot URL from response data
-            const snapshotUrl = `https://explore-openapi.dev/view?project=${project}&snapshot=${response.snapshot.name}`;
-            core.setOutput("snapshot-url", snapshotUrl);
-        }
-        // Create or update PR comment if in PR context
-        if (github.context.payload.pull_request) {
-            const octokit = github.getOctokit(githubToken);
-            await createOrUpdateComment(octokit, response, project);
-            core.info("PR comment created/updated successfully");
-        }
-        else {
-            core.warning("Not in a pull request context, skipping comment creation");
+            core.setOutput("snapshot-url", response.url);
         }
         core.info("Action completed successfully!");
     }
     catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
         core.setFailed(`Action failed: ${errorMessage}`);
-        // Create error comment in PR if possible
-        if (github.context.payload.pull_request) {
-            try {
-                const githubToken = core.getInput("github-token", { required: true });
-                const project = core.getInput("project", { required: true });
-                const octokit = github.getOctokit(githubToken);
-                await createOrUpdateComment(octokit, {
-                    snapshot: null,
-                    sameAsBase: false,
-                    message: null,
-                    error: errorMessage,
-                }, project);
-                core.info("Error comment created in PR");
-            }
-            catch (commentError) {
-                core.warning(`Failed to create error comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`);
-            }
-        }
+        // Note: Error handling and PR comments are managed by the backend
+        core.error(`Snapshot creation failed: ${errorMessage}`);
     }
 }
 run();

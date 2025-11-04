@@ -2,7 +2,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { readFile } from "node:fs/promises";
 import { sendSchemaToApi } from "./api.js";
-import { createOrUpdateComment } from "./comment.js";
+import { getOidcToken } from "./oidc.js";
 
 async function run(): Promise<void> {
   try {
@@ -10,11 +10,33 @@ async function run(): Promise<void> {
     const schemaFile = core.getInput("schema-file", { required: true });
     const project = core.getInput("project", { required: true });
     const snapshotNameInput = core.getInput("snapshot-name");
-    const authToken = core.getInput("auth-token", { required: true });
-    const githubToken = core.getInput("github-token", { required: true });
-    const permanentInput = core.getInput("permanent");
 
-    const apiUrl = "https://editor-api.explore-openapi.dev/public/v1/snapshot";
+    const apiUrl = "https://action.api.explore-openapi.dev/v1/snapshot";
+
+    // Detect if we're in a fork context
+    const isFork =
+      github.context.payload.pull_request?.head?.repo?.fork === true;
+
+    let oidcToken: string | undefined;
+
+    if (isFork) {
+      core.info("Fork PR detected - using fork context mode");
+    } else {
+      // Get OIDC token for authentication
+      core.info("Using OIDC authentication");
+      try {
+        core.info("Requesting OIDC token from GitHub Actions...");
+        oidcToken = await getOidcToken("https://explore-openapi.dev");
+        core.info("OIDC token obtained successfully");
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        core.setFailed(
+          `Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`,
+        );
+        return;
+      }
+    }
 
     // Generate snapshot name: PR number if in PR context, otherwise branch name
     let snapshotName = snapshotNameInput;
@@ -34,19 +56,8 @@ async function run(): Promise<void> {
       }
     }
 
-    // Determine if snapshot should be permanent
-    // Permanent if explicitly set, or if not in PR context (branch/tag push)
-    let permanent = false;
-    if (permanentInput) {
-      permanent = permanentInput.toLowerCase() === "true";
-    } else {
-      // Default: permanent for branch/tag pushes, temporary for PRs
-      permanent = !github.context.payload.pull_request;
-    }
-
     core.info(`Project: ${project}`);
     core.info(`Snapshot name: ${snapshotName}`);
-    core.info(`Permanent snapshot: ${permanent}`);
 
     core.info(`Reading schema from: ${schemaFile}`);
 
@@ -56,37 +67,39 @@ async function run(): Promise<void> {
 
     core.info(`Sending schema to API: ${apiUrl}`);
 
-    // Get base branch name if in PR context
-    const baseBranchName = github.context.payload.pull_request?.base?.ref;
+    // Prepare fork context if in fork mode
+    const forkContext = isFork
+      ? {
+        targetRepository:
+          github.context.payload.pull_request?.base?.repo?.full_name,
+        targetPullRequest: github.context.payload.pull_request?.number,
+        commitSha:
+          github.context.payload.pull_request?.head?.sha ||
+          github.context.sha,
+      }
+      : undefined;
+
+    if (forkContext) {
+      core.info(`Fork context: ${JSON.stringify(forkContext)}`);
+    }
 
     // Send schema to API
     const response = await sendSchemaToApi({
       apiUrl,
       schema,
-      authToken,
+      oidcToken,
       project,
       snapshotName,
-      permanent,
-      baseBranchName,
+      forkContext,
     });
 
     core.info(`API response received: ${JSON.stringify(response)}`);
 
     // Set outputs
     core.setOutput("response", JSON.stringify(response));
-    if (response.snapshot?.id && project) {
+    if (response.url) {
       // Generate snapshot URL from response data
-      const snapshotUrl = `https://explore-openapi.dev/view?project=${project}&snapshot=${response.snapshot.name}`;
-      core.setOutput("snapshot-url", snapshotUrl);
-    }
-
-    // Create or update PR comment if in PR context
-    if (github.context.payload.pull_request) {
-      const octokit = github.getOctokit(githubToken);
-      await createOrUpdateComment(octokit, response, project);
-      core.info("PR comment created/updated successfully");
-    } else {
-      core.warning("Not in a pull request context, skipping comment creation");
+      core.setOutput("snapshot-url", response.url);
     }
 
     core.info("Action completed successfully!");
@@ -95,29 +108,8 @@ async function run(): Promise<void> {
       error instanceof Error ? error.message : "Unknown error occurred";
     core.setFailed(`Action failed: ${errorMessage}`);
 
-    // Create error comment in PR if possible
-    if (github.context.payload.pull_request) {
-      try {
-        const githubToken = core.getInput("github-token", { required: true });
-        const project = core.getInput("project", { required: true });
-        const octokit = github.getOctokit(githubToken);
-        await createOrUpdateComment(
-          octokit,
-          {
-            snapshot: null,
-            sameAsBase: false,
-            message: null,
-            error: errorMessage,
-          },
-          project,
-        );
-        core.info("Error comment created in PR");
-      } catch (commentError) {
-        core.warning(
-          `Failed to create error comment: ${commentError instanceof Error ? commentError.message : "Unknown error"}`,
-        );
-      }
-    }
+    // Note: Error handling and PR comments are managed by the backend
+    core.error(`Snapshot creation failed: ${errorMessage}`);
   }
 }
 

@@ -15,11 +15,22 @@ export const SnapshotSchema = z.object({
 });
 
 export const SnapshotReturnSchema = z.object({
-  snapshot: SnapshotSchema.nullable(),
+  id: z.string().optional(),
+  url: z.string(),
   sameAsBase: z.boolean(),
   message: z.string().optional().nullable(),
   error: z.string().optional().nullable(),
 });
 
+export const ForkContextSchema = z.object({
+  targetRepository: z
+    .string()
+    .regex(/^[\w.-]+\/[\w.-]+$/)
+    .optional(), // e.g., "owner/repo"
+  targetPullRequest: z.number().int().positive().optional(), // PR number in target repo
+  commitSha: z.string().min(7).max(40).optional(), // Git commit SHA
+});
+
 export type SnapshotReturn = z.infer<typeof SnapshotReturnSchema>;
 export type Snapshot = z.infer<typeof SnapshotSchema>;
+export type ForkContext = z.infer<typeof ForkContextSchema>;
