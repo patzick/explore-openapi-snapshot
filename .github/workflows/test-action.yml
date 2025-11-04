@@ -21,4 +21,4 @@ jobs:
         uses: ./
         with:
           schema-file: "./example-schema.json"
-          project: "test-project"
+          project: "patzick/test-project"
