@@ -238,7 +238,7 @@ describe("E2E Tests", () => {
       forkContext: {
         targetRepository: envVars.TEST_REPO || "testowner/testrepo",
         targetPullRequest: 8,
-        commitSha: "76a1a8e9c39db4cd8ab257ec3538ac3404c1b9fd",
+        commitSha: "00009065aae9c69b90dab7a97a3a2dfe5ab6c0b2",
       },
     });
 
