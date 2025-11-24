@@ -1,6 +1,6 @@
 {
   "name": "explore-openapi-snapshot",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "GitHub Action to create a snapshot of OpenAPI schema at https://explore-openapi.dev/",
   "main": "dist/index.js",
   "type": "module",
@@ -26,12 +26,12 @@
     "@actions/github": "6.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.7",
-    "@types/node": "24.9.1",
+    "@biomejs/biome": "2.3.7",
+    "@types/node": "24.10.1",
     "@vercel/ncc": "0.38.4",
-    "oxlint": "1.24.0",
+    "oxlint": "1.29.0",
     "typescript": "5.9.3",
-    "vitest": "4.0.4",
+    "vitest": "4.0.13",
     "zod": "4.1.12"
   },
   "engines": {
