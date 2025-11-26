@@ -16,7 +16,7 @@
       "get": {
         "summary": "List users",
         "operationId": "getUsers",
-        "description": "Returns a cool list of users",
+        "description": "Returns a list of cool users",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -37,7 +37,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "properties": {
                     "error": {
                       "type": "string"
