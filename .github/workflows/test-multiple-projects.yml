@@ -1,0 +1,26 @@
+name: Test Multiple Projects
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches: [main]
+
+jobs:
+  test-second-project:
+    # Only run when the PR has the 'multiple-projects' label
+    if: contains(github.event.pull_request.labels.*.name, 'multiple-projects')
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run OpenAPI Snapshot Action for test-project2
+        uses: ./
+        with:
+          schema-file: "./example-schema.json"
+          project: "test-project2"

@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Run OpenAPI Snapshot Action
         uses: ./
         with:
           schema-file: "./example-schema.json"
-          project: "test-project"
+          project: "patzick/test-project"

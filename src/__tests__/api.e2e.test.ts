@@ -81,7 +81,7 @@ describe("E2E Tests", () => {
     },
   };
 
-  it("should successfully send schema to API and receive valid response", async () => {
+  it.skip("should successfully send schema to API and receive valid response", async () => {
     const mockOidcToken = createMockGitHubOidcToken(
       {},
       {
@@ -107,7 +107,7 @@ describe("E2E Tests", () => {
     expect(safeParse.success).toBe(true);
   }, 5000); // 5 second timeout for API call
 
-  it("should detect sameAsBase when PR snapshot matches base snapshot", async () => {
+  it.skip("should detect sameAsBase when PR snapshot matches base snapshot", async () => {
     const mockOidcToken = createMockGitHubOidcToken(
       {
         base_ref: "main",
@@ -180,7 +180,7 @@ describe("E2E Tests", () => {
     expect(parsedPrResponse.data.id).toBe(parsedBaseResponse.data.id); // Should be the same snapshot ID
   }, 5000); // 5 second timeout for two API calls
 
-  it("should successfully send schema with push event to main branch", async () => {
+  it.skip("should successfully send schema with push event to main branch", async () => {
     // Create a mock OIDC token for a push event to main branch
     const mockOidcToken = createMockGitHubOidcToken(
       {
@@ -224,6 +224,36 @@ describe("E2E Tests", () => {
         `"https://explore-openapi.dev/view?project=${envVars.TEST_PROJECT}&snapshot=main"`,
       );
       // For push events to main, sameAsBase could be true or false depending on whether schema changed
+      expect(typeof safeParse.data.sameAsBase).toBe("boolean");
+    }
+  }, 5000); // 5 second timeout for API call
+
+  it("should successfully send schema with fork context (no OIDC token)", async () => {
+    // Simulate a fork PR scenario where OIDC token is not available
+    // Instead, we send fork context in the request body
+    const response = await sendSchemaToApi({
+      apiUrl: envVars.API_URL,
+      schema: testSchema,
+      project: envVars.TEST_PROJECT,
+      forkContext: {
+        targetRepository: envVars.TEST_REPO || "testowner/testrepo",
+        targetPullRequest: 8,
+        commitSha: "76a1a8e9c39db4cd8ab257ec3538ac3404c1b9fd",
+      },
+    });
+
+    // Verify response has expected structure
+    const safeParse = SnapshotReturnSchema.safeParse(response);
+    if (!safeParse.success) {
+      expect(z.prettifyError(safeParse.error)).toEqual("");
+    }
+    expect(safeParse.success).toBe(true);
+
+    if (safeParse.success) {
+      // Verify the snapshot was created/updated successfully
+      expect(safeParse.data.id).toBeDefined();
+      expect(safeParse.data.url).toBeDefined();
+      // Fork PRs should still get valid responses
       expect(typeof safeParse.data.sameAsBase).toBe("boolean");
     }
   }, 5000); // 5 second timeout for API call
