@@ -16,7 +16,7 @@
       "get": {
         "summary": "List users",
         "operationId": "getUsers",
-        "description": "Returns a list of cool users",
+        "description": "Returns a list of cool users!",
         "responses": {
           "200": {
             "description": "Successful response",
