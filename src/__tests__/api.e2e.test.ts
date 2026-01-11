@@ -25,7 +25,7 @@ function loadEnvFile() {
   } catch (error) {
     throw new Error(
       "Failed to load .env file. Make sure it exists and contains required variables. Error: " +
-      error,
+        error,
     );
   }
 }
@@ -33,12 +33,7 @@ function loadEnvFile() {
 describe("E2E Tests", () => {
   const envVars = loadEnvFile();
 
-  const requiredVars = [
-    "API_URL",
-    "API_AUTH_TOKEN",
-    "TEST_PROJECT",
-    "TEST_SNAPSHOT_NAME",
-  ];
+  const requiredVars = ["API_URL", "API_AUTH_TOKEN", "TEST_PROJECT", "TEST_SNAPSHOT_NAME"];
 
   // Check if all required environment variables are present
   requiredVars.forEach((varName) => {

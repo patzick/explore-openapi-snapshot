@@ -37,19 +37,20 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for OIDC authentication
-    
+      id-token: write # Required for OIDC authentication
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Create OpenAPI Snapshot
         uses: patzick/explore-openapi-snapshot@v2
         with:
-          schema-file: './openapi.json'
-          project: 'my-api-project'
+          schema-file: "./openapi.json"
+          project: "my-api-project"
 ```
 
 That's it! The action will:
+
 - ✅ Authenticate using OIDC (no secrets needed)
 - ✅ Create snapshots for every PR and push
 - ✅ Post comments on PRs with snapshot links (via GitHub App)
@@ -82,19 +83,19 @@ PR comments are posted by the **Explore OpenAPI GitHub App**, not by the action 
 
 Snapshots are automatically managed based on context:
 
-| Context | Retention | Use Case |
-|---------|-----------|----------|
-| **Pull Request** | 30 days | Temporary snapshots for review |
-| **Branch Push** | Permanent | Development branch history |
-| **Tag Push** | Permanent | Release snapshots |
+| Context          | Retention | Use Case                       |
+| ---------------- | --------- | ------------------------------ |
+| **Pull Request** | 30 days   | Temporary snapshots for review |
+| **Branch Push**  | Permanent | Development branch history     |
+| **Tag Push**     | Permanent | Release snapshots              |
 
 ## Inputs
 
-| Input | Description | Required | Default |
-|-------|-------------|----------|---------|
-| `schema-file` | Path to the JSON schema file | **Yes** | - |
-| `project` | Project name or project ID | **Yes** | - |
-| `snapshot-name` | Custom snapshot name | No | PR number or branch name |
+| Input           | Description                  | Required | Default                  |
+| --------------- | ---------------------------- | -------- | ------------------------ |
+| `schema-file`   | Path to the JSON schema file | **Yes**  | -                        |
+| `project`       | Project name or project ID   | **Yes**  | -                        |
+| `snapshot-name` | Custom snapshot name         | No       | PR number or branch name |
 
 ### Snapshot Naming
 
@@ -107,10 +108,10 @@ The action automatically generates snapshot names:
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
+| Output         | Description                      |
+| -------------- | -------------------------------- |
 | `snapshot-url` | URL to view the created snapshot |
-| `response` | Full API response as JSON string |
+| `response`     | Full API response as JSON string |
 
 ### Using Outputs
 
@@ -119,8 +120,8 @@ The action automatically generates snapshot names:
   id: snapshot
   uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './openapi.json'
-    project: 'my-api-project'
+    schema-file: "./openapi.json"
+    project: "my-api-project"
 
 - name: Use snapshot URL
   run: echo "Snapshot created at ${{ steps.snapshot.outputs.snapshot-url }}"
@@ -131,6 +132,7 @@ The action automatically generates snapshot names:
 The action **fully supports external contributor PRs** thanks to OIDC authentication and the GitHub App:
 
 **How it works:**
+
 1. Fork PR triggers the workflow
 2. Action obtains OIDC token (no secrets needed)
 3. Backend validates token and creates snapshot
@@ -146,9 +148,9 @@ The action **fully supports external contributor PRs** thanks to OIDC authentica
 - name: Create OpenAPI Snapshot
   uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './api/openapi.json'
-    project: 'my-api-project'
-    snapshot-name: 'v2.1.0-beta'
+    schema-file: "./api/openapi.json"
+    project: "my-api-project"
+    snapshot-name: "v2.1.0-beta"
 ```
 
 ### Multiple Schemas
@@ -157,14 +159,14 @@ The action **fully supports external contributor PRs** thanks to OIDC authentica
 - name: Snapshot Public API
   uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './public-api.json'
-    project: 'my-project-public'
+    schema-file: "./public-api.json"
+    project: "my-project-public"
 
 - name: Snapshot Internal API
   uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './internal-api.json'
-    project: 'my-project-internal'
+    schema-file: "./internal-api.json"
+    project: "my-project-internal"
 ```
 
 ## Troubleshooting
@@ -174,6 +176,7 @@ The action **fully supports external contributor PRs** thanks to OIDC authentica
 **Cause**: Missing `id-token: write` permission.
 
 **Solution**: Add to your workflow:
+
 ```yaml
 permissions:
   id-token: write
@@ -196,6 +199,7 @@ permissions:
 If you're upgrading from v1, see the [Migration Guide](./MIGRATION_GUIDE.md) for detailed instructions.
 
 **Key changes in v2:**
+
 - ✅ OIDC is now the only authentication method (simpler!)
 - ✅ No more `use-oidc`, `auth-token`, or `github-token` inputs
 - ✅ Requires [GitHub App installation](https://github.com/apps/explore-openapi/installations/new)

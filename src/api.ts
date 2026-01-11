@@ -10,11 +10,8 @@ export type SendSchemaParams = {
   forkContext?: ForkContext;
 };
 
-export async function sendSchemaToApi(
-  params: SendSchemaParams,
-): Promise<SnapshotReturn> {
-  const { apiUrl, schema, oidcToken, project, snapshotName, forkContext } =
-    params;
+export async function sendSchemaToApi(params: SendSchemaParams): Promise<SnapshotReturn> {
+  const { apiUrl, schema, oidcToken, project, snapshotName, forkContext } = params;
 
   try {
     const headers: Record<string, string> = {
@@ -51,9 +48,7 @@ export async function sendSchemaToApi(
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `API request failed with status ${response.status}: ${errorText}`,
-      );
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
 
     const data = (await response.json()) as SnapshotReturn;
