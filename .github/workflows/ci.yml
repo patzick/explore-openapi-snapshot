@@ -17,18 +17,25 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: 24
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
 
       - name: Run linter
         run: pnpm run lint
+
+      - name: Run format check
+        run: pnpm run format:check
 
   typecheck:
     name: Type Check
@@ -37,12 +44,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: 24
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
@@ -57,12 +68,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: 24
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
@@ -77,12 +92,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: 24
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm i --frozen-lockfile --prefer-offline
