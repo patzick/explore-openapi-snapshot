@@ -5,12 +5,14 @@ Thank you for your interest in contributing! Here are some guidelines to help yo
 ## Development Setup
 
 1. **Fork and clone the repository**
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/explore-openapi-snapshot.git
    cd explore-openapi-snapshot
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```

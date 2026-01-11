@@ -1,12 +1,4 @@
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeEach,
-  afterEach,
-  type Mock,
-} from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { sendSchemaToApi } from "../api.js";
@@ -18,9 +10,7 @@ vi.mock("../api.js");
 vi.mock("fs/promises", () => ({
   readFile: vi
     .fn()
-    .mockResolvedValue(
-      '{"openapi": "3.0.0", "info": {"title": "Test API", "version": "1.0.0"}}',
-    ),
+    .mockResolvedValue('{"openapi": "3.0.0", "info": {"title": "Test API", "version": "1.0.0"}}'),
 }));
 
 describe("Main Action Logic", () => {
