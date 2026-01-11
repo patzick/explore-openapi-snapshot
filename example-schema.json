@@ -14,7 +14,7 @@
   "paths": {
     "/users": {
       "get": {
-        "summary": "List users",
+        "summary": "List users!",
         "operationId": "getUsers",
         "description": "Returns a list of users",
         "responses": {
