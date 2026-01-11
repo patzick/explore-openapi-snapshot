@@ -13,8 +13,7 @@ export async function getOidcToken(audience?: string): Promise<string> {
     }
     return oidcToken;
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     throw new Error(`Failed to retrieve OIDC token: ${errorMessage}`);
   }
 }

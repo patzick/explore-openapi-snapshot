@@ -7,6 +7,7 @@ This guide will help you get started with the OpenAPI Snapshot GitHub Action in 
 Before using this action, you'll need an authentication token from https://explore-openapi.dev/
 
 Store it as a secret in your GitHub repository:
+
 1. Go to your repository Settings
 2. Navigate to Secrets and variables → Actions
 3. Click "New repository secret"
@@ -59,10 +60,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: patzick/explore-openapi-snapshot@v1
         with:
-          schema-file: './openapi.json'
+          schema-file: "./openapi.json"
           auth-token: ${{ secrets.API_AUTH_TOKEN }}
 ```
 

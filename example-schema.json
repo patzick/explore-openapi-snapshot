@@ -19,7 +19,7 @@
         "description": "Returns a list of cool users!",
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": {

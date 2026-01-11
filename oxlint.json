@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript"],
+  "rules": {
+    "no-explicit-any": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/__tests__/**/*.ts"],
+      "rules": {
+        "no-explicit-any": "off"
+      }
+    }
+  ]
+}

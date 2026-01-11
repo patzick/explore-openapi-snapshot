@@ -34,15 +34,11 @@ describe("getOidcToken", () => {
   it("should throw error when OIDC token is empty", async () => {
     vi.mocked(core.getIDToken).mockResolvedValueOnce("");
 
-    await expect(getOidcToken()).rejects.toThrow(
-      "Failed to get OIDC token from GitHub Actions",
-    );
+    await expect(getOidcToken()).rejects.toThrow("Failed to get OIDC token from GitHub Actions");
   });
 
   it("should throw error when getIDToken fails", async () => {
-    const error = new Error(
-      "Unable to get OIDC token: id-token permission not granted",
-    );
+    const error = new Error("Unable to get OIDC token: id-token permission not granted");
     vi.mocked(core.getIDToken).mockRejectedValueOnce(error);
 
     await expect(getOidcToken()).rejects.toThrow(
@@ -53,8 +49,6 @@ describe("getOidcToken", () => {
   it("should handle non-Error exceptions", async () => {
     vi.mocked(core.getIDToken).mockRejectedValueOnce("String error");
 
-    await expect(getOidcToken()).rejects.toThrow(
-      "Failed to retrieve OIDC token: Unknown error",
-    );
+    await expect(getOidcToken()).rejects.toThrow("Failed to retrieve OIDC token: Unknown error");
   });
 });

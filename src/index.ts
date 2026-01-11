@@ -14,8 +14,7 @@ async function run(): Promise<void> {
     const apiUrl = "https://action.api.explore-openapi.dev/v1/snapshot";
 
     // Detect if we're in a fork context
-    const isFork =
-      github.context.payload.pull_request?.head?.repo?.fork === true;
+    const isFork = github.context.payload.pull_request?.head?.repo?.fork === true;
 
     let oidcToken: string | undefined;
 
@@ -29,8 +28,7 @@ async function run(): Promise<void> {
         oidcToken = await getOidcToken("https://explore-openapi.dev");
         core.info("OIDC token obtained successfully");
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         core.setFailed(
           `Failed to obtain OIDC token: ${errorMessage}. Make sure the workflow has 'id-token: write' permission.`,
         );
@@ -70,13 +68,10 @@ async function run(): Promise<void> {
     // Prepare fork context if in fork mode
     const forkContext = isFork
       ? {
-        targetRepository:
-          github.context.payload.pull_request?.base?.repo?.full_name,
-        targetPullRequest: github.context.payload.pull_request?.number,
-        commitSha:
-          github.context.payload.pull_request?.head?.sha ||
-          github.context.sha,
-      }
+          targetRepository: github.context.payload.pull_request?.base?.repo?.full_name,
+          targetPullRequest: github.context.payload.pull_request?.number,
+          commitSha: github.context.payload.pull_request?.head?.sha || github.context.sha,
+        }
       : undefined;
 
     if (forkContext) {
@@ -104,8 +99,7 @@ async function run(): Promise<void> {
 
     core.info("Action completed successfully!");
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     core.setFailed(`Action failed: ${errorMessage}`);
 
     // Note: Error handling and PR comments are managed by the backend
@@ -113,4 +107,6 @@ async function run(): Promise<void> {
   }
 }
 
-run();
+run().catch((error: unknown) => {
+  core.setFailed(error instanceof Error ? error.message : String(error));
+});
