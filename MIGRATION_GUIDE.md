@@ -57,18 +57,18 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # ❌ Not needed in v2
-    
+      pull-requests: write # ❌ Not needed in v2
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Create OpenAPI Snapshot
         uses: patzick/explore-openapi-snapshot@v1
         with:
-          schema-file: './openapi.json'
-          project: 'my-api-project'
-          auth-token: ${{ secrets.API_AUTH_TOKEN }}  # ❌ Removed in v2
-          github-token: ${{ secrets.GITHUB_TOKEN }}  # ❌ Removed in v2
+          schema-file: "./openapi.json"
+          project: "my-api-project"
+          auth-token: ${{ secrets.API_AUTH_TOKEN }} # ❌ Removed in v2
+          github-token: ${{ secrets.GITHUB_TOKEN }} # ❌ Removed in v2
 ```
 
 #### After (v2)
@@ -85,16 +85,16 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # ✅ Only permission needed
-    
+      id-token: write # ✅ Only permission needed
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Create OpenAPI Snapshot
-        uses: patzick/explore-openapi-snapshot@v2  # ✅ Updated version
+        uses: patzick/explore-openapi-snapshot@v2 # ✅ Updated version
         with:
-          schema-file: './openapi.json'
-          project: 'my-api-project'
+          schema-file: "./openapi.json"
+          project: "my-api-project"
           # ✅ That's it! Much simpler.
 ```
 
@@ -102,11 +102,11 @@ jobs:
 
 Remove these inputs from your workflow:
 
-| Removed Input | Reason | v2 Equivalent |
-|---------------|--------|---------------|
-| `auth-token` | Replaced by OIDC | *(automatic)* |
-| `github-token` | PR comments via GitHub App | *(not needed)* |
-| `permanent` | Backend handles retention | *(automatic)* |
+| Removed Input  | Reason                     | v2 Equivalent  |
+| -------------- | -------------------------- | -------------- |
+| `auth-token`   | Replaced by OIDC           | _(automatic)_  |
+| `github-token` | PR comments via GitHub App | _(not needed)_ |
+| `permanent`    | Backend handles retention  | _(automatic)_  |
 
 ### Step 4: Update Permissions
 
@@ -114,7 +114,7 @@ Add `id-token: write` and remove `pull-requests: write`:
 
 ```yaml
 permissions:
-  id-token: write  # Add this
+  id-token: write # Add this
   # pull-requests: write  # Remove this
 ```
 
@@ -125,28 +125,31 @@ permissions:
 Most v1 users had this configuration:
 
 **v1 Configuration:**
+
 ```yaml
 - uses: patzick/explore-openapi-snapshot@v1
   with:
-    schema-file: './openapi.json'
-    project: 'my-project'
+    schema-file: "./openapi.json"
+    project: "my-project"
     auth-token: ${{ secrets.API_AUTH_TOKEN }}
     github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 **v2 Configuration:**
+
 ```yaml
 permissions:
-  id-token: write  # Add this permission
+  id-token: write # Add this permission
 
 steps:
   - uses: patzick/explore-openapi-snapshot@v2
     with:
-      schema-file: './openapi.json'
-      project: 'my-project'
+      schema-file: "./openapi.json"
+      project: "my-project"
 ```
 
 **Changes:**
+
 1. Remove `auth-token` (OIDC replaces it)
 2. Remove `github-token` (not needed)
 3. Remove `permanent` if present (backend handles retention)
@@ -160,16 +163,18 @@ steps:
 If you were using the `permanent` flag in v1:
 
 **v1 Configuration:**
+
 ```yaml
 - uses: patzick/explore-openapi-snapshot@v1
   with:
-    schema-file: './openapi.json'
-    project: 'my-project'
+    schema-file: "./openapi.json"
+    project: "my-project"
     auth-token: ${{ secrets.API_AUTH_TOKEN }}
-    permanent: 'true'  # ❌ Removed in v2
+    permanent: "true" # ❌ Removed in v2
 ```
 
 **v2 Configuration:**
+
 ```yaml
 permissions:
   id-token: write
@@ -177,12 +182,13 @@ permissions:
 steps:
   - uses: patzick/explore-openapi-snapshot@v2
     with:
-      schema-file: './openapi.json'
-      project: 'my-project'
+      schema-file: "./openapi.json"
+      project: "my-project"
       # No permanent flag needed - backend handles it automatically
 ```
 
 **Changes:**
+
 - Remove `permanent` flag - retention is now automatic based on context (PR vs branch/tag)
 
 ### Scenario 3: Custom Snapshot Names
@@ -190,12 +196,13 @@ steps:
 Custom snapshot names work the same way:
 
 **v1 & v2 (No Change):**
+
 ```yaml
 - uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './openapi.json'
-    project: 'my-project'
-    snapshot-name: 'v2.1.0-beta'  # ✅ Still works
+    schema-file: "./openapi.json"
+    project: "my-project"
+    snapshot-name: "v2.1.0-beta" # ✅ Still works
 ```
 
 ### Scenario 4: Multiple Schemas
@@ -203,29 +210,30 @@ Custom snapshot names work the same way:
 Multiple schemas work the same way:
 
 **v1 & v2 (No Change):**
+
 ```yaml
 - name: Public API
   uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './public-api.json'
-    project: 'my-project-public'
+    schema-file: "./public-api.json"
+    project: "my-project-public"
 
 - name: Internal API
   uses: patzick/explore-openapi-snapshot@v2
   with:
-    schema-file: './internal-api.json'
-    project: 'my-project-internal'
+    schema-file: "./internal-api.json"
+    project: "my-project-internal"
 ```
 
 ## Breaking Changes Summary
 
 ### Removed Inputs
 
-| Input | Status | Migration |
-|-------|--------|-----------|
-| `auth-token` | ❌ Removed | Use OIDC (automatic), remove secrets |
+| Input          | Status     | Migration                                      |
+| -------------- | ---------- | ---------------------------------------------- |
+| `auth-token`   | ❌ Removed | Use OIDC (automatic), remove secrets           |
 | `github-token` | ❌ Removed | GitHub App handles comments, remove this input |
-| `permanent` | ❌ Removed | Backend handles retention automatically |
+| `permanent`    | ❌ Removed | Backend handles retention automatically        |
 
 ### Required Changes
 
@@ -245,6 +253,7 @@ Multiple schemas work the same way:
 **Problem**: Missing `id-token: write` permission.
 
 **Solution**:
+
 ```yaml
 permissions:
   id-token: write
@@ -267,6 +276,7 @@ permissions:
 **Problem**: This should work automatically in v2!
 
 **Verification**:
+
 1. Ensure GitHub App is installed
 2. Ensure `id-token: write` permission is set
 3. Check that the workflow runs on `pull_request` events
@@ -316,4 +326,3 @@ permissions:
 ---
 
 **Ready to migrate?** Start with [installing the GitHub App](https://github.com/apps/explore-openapi/installations/new)! 🚀
-
