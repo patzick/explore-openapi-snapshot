@@ -30,9 +30,9 @@
     "@types/node": "24.10.1",
     "@typescript/native-preview": "7.0.0-dev.20260119.1",
     "@vercel/ncc": "0.38.4",
-    "oxfmt": "0.35.0",
+    "oxfmt": "0.36.0",
     "oxlint": "1.41.0",
-    "oxlint-tsgolint": "0.14.2",
+    "oxlint-tsgolint": "0.16.0",
     "typescript": "5.9.3",
     "vitest": "4.0.18",
     "zod": "4.3.6"
