@@ -29,12 +29,12 @@
   "devDependencies": {
     "@types/node": "24.10.1",
     "@typescript/native-preview": "7.0.0-dev.20260302.1",
-    "@vercel/ncc": "0.38.4",
+    "@vercel/ncc": "0.44.0",
     "oxfmt": "0.42.0",
-    "oxlint": "1.55.0",
+    "oxlint": "1.69.0",
     "oxlint-tsgolint": "0.18.1",
     "typescript": "5.9.3",
-    "vitest": "4.1.0",
+    "vitest": "4.1.8",
     "zod": "4.3.6"
   },
   "engines": {
