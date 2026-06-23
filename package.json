@@ -12,7 +12,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build ./src/index.ts && node -e \"const fs=require('node:fs');const p='dist/index.js';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/[ \\\\t]+$/gm,''));\"",
+    "build": "ncc build ./src/index.ts",
     "lint": "oxlint --type-aware src",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
