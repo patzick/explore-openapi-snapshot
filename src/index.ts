@@ -1,8 +1,27 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import { readFile } from "node:fs/promises";
-import { sendSchemaToApi } from "./api.js";
+import { sendSchemaToApi, type SendSchemaParams } from "./api.js";
 import { getOidcToken } from "./oidc.js";
+
+function getWorkflowRunUrl(): string | undefined {
+  const runId = github.context.runId;
+  const repository = `${github.context.repo.owner}/${github.context.repo.repo}`;
+
+  if (!runId || !repository) {
+    return undefined;
+  }
+
+  const serverUrl = (github.context.serverUrl || "https://github.com").replace(/\/$/, "");
+  const url = new URL(`${serverUrl}/${repository}/actions/runs/${runId}`);
+  const pullRequestNumber = github.context.payload.pull_request?.number;
+
+  if (pullRequestNumber) {
+    url.searchParams.set("pr", `${pullRequestNumber}`);
+  }
+
+  return url.toString();
+}
 
 async function run(): Promise<void> {
   try {
@@ -78,15 +97,29 @@ async function run(): Promise<void> {
       core.info(`Fork context: ${JSON.stringify(forkContext)}`);
     }
 
-    // Send schema to API
-    const response = await sendSchemaToApi({
+    const workflowRunUrl = getWorkflowRunUrl();
+    if (workflowRunUrl) {
+      core.info(`Workflow run URL: ${workflowRunUrl}`);
+    }
+
+    const request: SendSchemaParams = {
       apiUrl,
       schema,
       oidcToken,
       project,
       snapshotName,
-      forkContext,
-    });
+    };
+
+    if (forkContext) {
+      request.forkContext = forkContext;
+    }
+
+    if (workflowRunUrl) {
+      request.workflowRunUrl = workflowRunUrl;
+    }
+
+    // Send schema to API
+    const response = await sendSchemaToApi(request);
 
     core.info(`API response received: ${JSON.stringify(response)}`);
 

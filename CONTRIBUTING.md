@@ -60,6 +60,18 @@ Thank you for your interest in contributing! Here are some guidelines to help yo
 5. Commit all changes including `dist/`
 6. Open a pull request
 
+## Release Process
+
+Run release preparation from the release branch:
+
+```bash
+pnpm prepare-release
+```
+
+The script asks for the version, updates `CHANGELOG.md`, bumps `package.json`, refreshes the lockfile, rebuilds `dist/`, and runs the release checks. Review the generated changelog entry before opening the release PR.
+
+After the PR is merged into `main`, the release workflow waits for CI to pass, creates the immutable version tag (for example `v2.0.1`), updates the moving major tag (for example `v2`), and creates the GitHub Release from the matching `CHANGELOG.md` section.
+
 ## Questions?
 
 Feel free to open an issue if you have questions or need help!

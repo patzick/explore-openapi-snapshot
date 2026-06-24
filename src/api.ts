@@ -8,10 +8,11 @@ export type SendSchemaParams = {
   project: string;
   snapshotName?: string;
   forkContext?: ForkContext;
+  workflowRunUrl?: string;
 };
 
 export async function sendSchemaToApi(params: SendSchemaParams): Promise<SnapshotReturn> {
-  const { apiUrl, schema, oidcToken, project, snapshotName, forkContext } = params;
+  const { apiUrl, schema, oidcToken, project, snapshotName, forkContext, workflowRunUrl } = params;
 
   try {
     const headers: Record<string, string> = {
@@ -25,6 +26,10 @@ export async function sendSchemaToApi(params: SendSchemaParams): Promise<Snapsho
       project,
       snapshotName,
     };
+
+    if (workflowRunUrl) {
+      body.workflowRunUrl = workflowRunUrl;
+    }
 
     if (oidcToken) {
       // OIDC authentication for regular PRs and pushes

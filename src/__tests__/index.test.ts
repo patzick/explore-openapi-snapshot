@@ -82,6 +82,33 @@ describe("Main Action Logic", () => {
     });
   });
 
+  it("should include the workflow run URL for PR snapshots", async () => {
+    mockGithub.context = {
+      repo: { owner: "test-owner", repo: "test-repo" },
+      ref: "refs/pull/123/merge",
+      runId: 456789,
+      serverUrl: "https://github.com",
+      payload: {
+        pull_request: {
+          number: 123,
+          base: { ref: "main" },
+        },
+      },
+    };
+
+    await import("../index.js");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockSendSchemaToApi).toHaveBeenCalledWith({
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
+      schema: expect.any(Object),
+      oidcToken: "test-oidc-token",
+      project: "test-project",
+      snapshotName: "123",
+      workflowRunUrl: "https://github.com/test-owner/test-repo/actions/runs/456789?pr=123",
+    });
+  });
+
   it("should generate snapshot name from branch name", async () => {
     // Mock branch push context
     mockGithub.context = {

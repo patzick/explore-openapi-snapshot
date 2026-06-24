@@ -36456,7 +36456,7 @@ const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.ur
 ;// CONCATENATED MODULE: ./src/api.ts
 
 async function sendSchemaToApi(params) {
-    const { apiUrl, schema, oidcToken, project, snapshotName, forkContext } = params;
+    const { apiUrl, schema, oidcToken, project, snapshotName, forkContext, workflowRunUrl } = params;
     try {
         const headers = {
             "Content-Type": "application/json",
@@ -36468,6 +36468,9 @@ async function sendSchemaToApi(params) {
             project,
             snapshotName,
         };
+        if (workflowRunUrl) {
+            body.workflowRunUrl = workflowRunUrl;
+        }
         if (oidcToken) {
             // OIDC authentication for regular PRs and pushes
             headers.Authorization = `Bearer ${oidcToken}`;
@@ -36527,6 +36530,20 @@ async function getOidcToken(audience) {
 
 
 
+function getWorkflowRunUrl() {
+    const runId = github_context.runId;
+    const repository = `${github_context.repo.owner}/${github_context.repo.repo}`;
+    if (!runId || !repository) {
+        return undefined;
+    }
+    const serverUrl = (github_context.serverUrl || "https://github.com").replace(/\/$/, "");
+    const url = new URL(`${serverUrl}/${repository}/actions/runs/${runId}`);
+    const pullRequestNumber = github_context.payload.pull_request?.number;
+    if (pullRequestNumber) {
+        url.searchParams.set("pr", `${pullRequestNumber}`);
+    }
+    return url.toString();
+}
 async function run() {
     try {
         // Get inputs
@@ -36592,15 +36609,25 @@ async function run() {
         if (forkContext) {
             info(`Fork context: ${JSON.stringify(forkContext)}`);
         }
-        // Send schema to API
-        const response = await sendSchemaToApi({
+        const workflowRunUrl = getWorkflowRunUrl();
+        if (workflowRunUrl) {
+            info(`Workflow run URL: ${workflowRunUrl}`);
+        }
+        const request = {
             apiUrl,
             schema,
             oidcToken,
             project,
             snapshotName,
-            forkContext,
-        });
+        };
+        if (forkContext) {
+            request.forkContext = forkContext;
+        }
+        if (workflowRunUrl) {
+            request.workflowRunUrl = workflowRunUrl;
+        }
+        // Send schema to API
+        const response = await sendSchemaToApi(request);
         info(`API response received: ${JSON.stringify(response)}`);
         // Set outputs
         setOutput("response", JSON.stringify(response));
