@@ -82,6 +82,48 @@ describe("sendSchemaToApi", () => {
     ).rejects.toThrow("Network error");
   });
 
+  it("should include workflow run URL when provided", async () => {
+    const mockResponse = {
+      id: "snapshot-123",
+      url: "https://explore-openapi.dev/view?project=test-project&snapshot=test-snapshot",
+      sameAsBase: false,
+      message: null,
+      error: null,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const result = await sendSchemaToApi({
+      apiUrl: "https://action.api.explore-openapi.dev/v1/snapshot",
+      schema: { openapi: "3.0.0" },
+      oidcToken: "test-oidc-token",
+      project: "test-project",
+      snapshotName: "test-snapshot",
+      workflowRunUrl: "https://github.com/owner/repo/actions/runs/123?pr=10",
+    });
+
+    expect(result).toEqual(mockResponse);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://action.api.explore-openapi.dev/v1/snapshot",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer test-oidc-token",
+        },
+        body: JSON.stringify({
+          schema: { openapi: "3.0.0" },
+          project: "test-project",
+          snapshotName: "test-snapshot",
+          workflowRunUrl: "https://github.com/owner/repo/actions/runs/123?pr=10",
+        }),
+      }),
+    );
+  });
+
   it("should send fork context to fork endpoint with Fork Authorization header", async () => {
     const mockResponse = {
       id: "snapshot-456",
