@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.1.0 - 2026-06-24
+
+### Added
+
+- Include the GitHub Actions workflow run URL when creating snapshots, so Explore OpenAPI can link a snapshot back to the run that produced it.
+- Support multiple project snapshots from the same pull request workflow.
+
+### Changed
+
+- Moved the action runtime to Node 24 and refreshed the bundled action dependencies.
+
 ## v2.0.0 - 2025-10-29
 
 ### Changed
