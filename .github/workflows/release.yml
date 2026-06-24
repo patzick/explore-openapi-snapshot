@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Determine release version
+        id: release
+        run: |
+          set -euo pipefail
+
+          git fetch --tags origin
+
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          major_tag="v${version%%.*}"
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Only stable X.Y.Z action releases are supported, got ${version}"
+            exit 1
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Release tag ${tag} already exists; skipping."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          awk -v tag="$tag" '
+            $0 == "## " tag || $0 ~ "^## " tag " - " {
+              found = 1
+              print
+              next
+            }
+            found && /^## / {
+              exit
+            }
+            found {
+              print
+            }
+          ' CHANGELOG.md > release-notes.md
+
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md does not contain release notes for ${tag}"
+            exit 1
+          fi
+
+          {
+            echo "should_release=true"
+            echo "version=${version}"
+            echo "tag=${tag}"
+            echo "major_tag=${major_tag}"
+            echo "release_sha=${{ github.event.workflow_run.head_sha }}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create tags
+        if: steps.release.outputs.should_release == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${{ steps.release.outputs.tag }}" \
+            "${{ steps.release.outputs.release_sha }}" \
+            -m "${{ steps.release.outputs.tag }}"
+
+          git tag -f "${{ steps.release.outputs.major_tag }}" \
+            "${{ steps.release.outputs.release_sha }}"
+
+          git push origin "refs/tags/${{ steps.release.outputs.tag }}"
+          git push -f origin "refs/tags/${{ steps.release.outputs.major_tag }}"
+
+      - name: Create GitHub release
+        if: steps.release.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.release.outputs.tag }}" \
+            --target "${{ steps.release.outputs.release_sha }}" \
+            --title "${{ steps.release.outputs.tag }}" \
+            --notes-file release-notes.md \
+            --verify-tag
